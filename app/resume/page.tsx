@@ -1,6 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { resume } from "@/content/resume";
 import styles from "./resume.module.css";
+
+export const metadata: Metadata = {
+  title: "Resume",
+  description:
+    "Resume for Muhammad Sharif — Computer Science and Mathematics student focused on backend engineering, distributed systems, and production software.",
+  alternates: {
+    canonical: "/resume",
+  },
+};
 
 export default function ResumePage() {
   return (
