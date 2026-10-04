@@ -1184,3 +1184,249 @@ a {
     display: none;
   }
 }
+
+
+/* Full-body cursor rig. Later rules intentionally override the earlier static companion. */
+.cursor-daffy {
+  width: 88px;
+  height: 128px;
+  transform-origin: center;
+}
+
+.cursor-daffy__rig {
+  position: relative;
+  width: 88px;
+  height: 124px;
+  transform-origin: 50% 72%;
+  transform:
+    scaleX(var(--daffy-facing))
+    rotate(var(--daffy-tilt));
+  will-change: transform;
+}
+
+.cursor-daffy__piece {
+  position: absolute;
+  inset: 0;
+  width: 88px;
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  transform-origin: center;
+  filter:
+    drop-shadow(0 2px 1px rgba(0, 0, 0, 0.34))
+    drop-shadow(0 9px 16px rgba(0, 0, 0, 0.35));
+}
+
+.cursor-daffy__piece--head {
+  clip-path: inset(0 0 65% 0);
+  transform-origin: 52% 29%;
+}
+
+.cursor-daffy__piece--body {
+  clip-path: polygon(
+    13% 27%,
+    89% 27%,
+    88% 72%,
+    14% 72%
+  );
+  transform-origin: 53% 56%;
+}
+
+.cursor-daffy__piece--leg-left {
+  clip-path: polygon(
+    0 63%,
+    55% 63%,
+    55% 100%,
+    0 100%
+  );
+  transform-origin: 49% 68%;
+}
+
+.cursor-daffy__piece--leg-right {
+  clip-path: polygon(
+    47% 63%,
+    100% 63%,
+    100% 100%,
+    47% 100%
+  );
+  transform-origin: 58% 68%;
+}
+
+.cursor-daffy__speech {
+  position: absolute;
+  left: 72px;
+  top: 4px;
+  padding: 5px 7px;
+  border: 1px solid rgba(240, 238, 232, 0.32);
+  background: rgba(7, 8, 10, 0.88);
+  color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 7px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(4px) rotate(-6deg);
+  transition: opacity 80ms ease, transform 80ms ease;
+}
+
+.cursor-daffy[data-goofy="true"] .cursor-daffy__speech {
+  opacity: 1;
+  transform: translateY(0) rotate(-6deg);
+}
+
+.cursor-daffy[data-moving="true"] .cursor-daffy__piece--head {
+  animation: daffy-head-run 280ms ease-in-out infinite alternate;
+}
+
+.cursor-daffy[data-moving="true"] .cursor-daffy__piece--body {
+  animation: daffy-body-run 280ms ease-in-out infinite alternate;
+}
+
+.cursor-daffy[data-moving="true"] .cursor-daffy__piece--leg-left {
+  animation: daffy-leg-left 280ms ease-in-out infinite alternate;
+}
+
+.cursor-daffy[data-moving="true"] .cursor-daffy__piece--leg-right {
+  animation: daffy-leg-right 280ms ease-in-out infinite alternate;
+}
+
+.cursor-daffy[data-moving="false"] .cursor-daffy__piece--head {
+  animation: daffy-head-idle 2.7s ease-in-out infinite;
+}
+
+.cursor-daffy[data-moving="false"] .cursor-daffy__piece--body {
+  animation: daffy-body-idle 2.7s ease-in-out infinite;
+}
+
+.cursor-daffy[data-goofy="true"] .cursor-daffy__rig {
+  animation: daffy-goofy-hop 410ms cubic-bezier(0.2, 0.85, 0.3, 1) infinite alternate;
+}
+
+.cursor-daffy[data-goofy="true"] .cursor-daffy__piece--head {
+  animation: daffy-head-goofy 180ms ease-in-out infinite alternate;
+}
+
+.cursor-daffy[data-goofy="true"] .cursor-daffy__piece--leg-left {
+  animation: daffy-kick-left 220ms ease-in-out infinite alternate;
+}
+
+.cursor-daffy[data-goofy="true"] .cursor-daffy__piece--leg-right {
+  animation: daffy-kick-right 220ms ease-in-out infinite alternate;
+}
+
+@keyframes daffy-head-run {
+  from {
+    transform: rotate(-4deg) translateY(0);
+  }
+  to {
+    transform: rotate(5deg) translateY(-2px);
+  }
+}
+
+@keyframes daffy-body-run {
+  from {
+    transform: rotate(2deg) translateY(0);
+  }
+  to {
+    transform: rotate(-3deg) translateY(-2px);
+  }
+}
+
+@keyframes daffy-leg-left {
+  from {
+    transform: rotate(8deg) translateY(0);
+  }
+  to {
+    transform: rotate(-11deg) translateY(-1px);
+  }
+}
+
+@keyframes daffy-leg-right {
+  from {
+    transform: rotate(-10deg) translateY(-1px);
+  }
+  to {
+    transform: rotate(9deg) translateY(0);
+  }
+}
+
+@keyframes daffy-head-idle {
+  0%,
+  100% {
+    transform: rotate(-2deg) translateY(0);
+  }
+  35% {
+    transform: rotate(4deg) translateY(-1px);
+  }
+  60% {
+    transform: rotate(-5deg) translateY(1px);
+  }
+}
+
+@keyframes daffy-body-idle {
+  0%,
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+  50% {
+    transform: rotate(1.5deg) translateY(-2px);
+  }
+}
+
+@keyframes daffy-goofy-hop {
+  from {
+    transform:
+      scaleX(var(--daffy-facing))
+      rotate(calc(var(--daffy-tilt) - 7deg))
+      translateY(2px)
+      scaleY(0.93);
+  }
+  to {
+    transform:
+      scaleX(var(--daffy-facing))
+      rotate(calc(var(--daffy-tilt) + 7deg))
+      translateY(-8px)
+      scaleY(1.04);
+  }
+}
+
+@keyframes daffy-head-goofy {
+  from {
+    transform: rotate(-10deg) translateY(1px);
+  }
+  to {
+    transform: rotate(13deg) translateY(-3px);
+  }
+}
+
+@keyframes daffy-kick-left {
+  from {
+    transform: rotate(6deg);
+  }
+  to {
+    transform: rotate(-18deg) translateX(-2px);
+  }
+}
+
+@keyframes daffy-kick-right {
+  from {
+    transform: rotate(-7deg);
+  }
+  to {
+    transform: rotate(17deg) translateX(2px);
+  }
+}
+
+@media (max-width: 1100px) and (pointer: fine) {
+  .cursor-daffy {
+    width: 76px;
+    height: 112px;
+  }
+
+  .cursor-daffy__rig,
+  .cursor-daffy__piece {
+    width: 76px;
+  }
+}
