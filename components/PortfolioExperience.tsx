@@ -33,6 +33,8 @@ const G = 9.81;
 const PENDULUM_COUNT = 200;
 const ANGLE_DELTA = (0.1 * Math.PI) / 180;
 const CHAPTER_COUNT = 7;
+const SEED_A = Math.floor(PENDULUM_COUNT / 2) - 1;
+const SEED_B = Math.floor(PENDULUM_COUNT / 2);
 
 const CAMERA_PRESETS: CameraPreset[] = [
   { scale: 1.0, focusX: 0.5, focusY: 0.48 },
@@ -280,6 +282,10 @@ function PendulumField() {
 
         trailCtx.globalCompositeOperation = "source-over";
 
+        const fieldReveal = easeOutCubic(
+          (introElapsed - 3300) / 2500,
+        );
+
         for (let index = 0; index < states.length; index += 1) {
           const p = endPoint(
             states[index],
@@ -289,20 +295,29 @@ function PendulumField() {
           );
           const px = previousEnds[index * 2];
           const py = previousEnds[index * 2 + 1];
+          const isSeed = index === SEED_A || index === SEED_B;
 
           if (Number.isFinite(px) && Number.isFinite(py)) {
             const hue = (index / PENDULUM_COUNT) * 330 + 10;
-            const saturation = 14 + colorReveal * 82;
+            const saturation = isSeed
+              ? 8 + colorReveal * 72
+              : 14 + colorReveal * 82;
             const lightness = 78 - colorReveal * 14;
-            const alpha = 0.012 + trailReveal * 0.46;
+            const alpha = isSeed
+              ? 0.055 + trailReveal * 0.42
+              : (0.006 + trailReveal * 0.34) * fieldReveal;
 
-            trailCtx.beginPath();
-            trailCtx.moveTo(px, py);
-            trailCtx.lineTo(p.x2, p.y2);
-            trailCtx.strokeStyle =
-              `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
-            trailCtx.lineWidth = 0.38 + trailReveal * 0.42;
-            trailCtx.stroke();
+            if (alpha > 0.003) {
+              trailCtx.beginPath();
+              trailCtx.moveTo(px, py);
+              trailCtx.lineTo(p.x2, p.y2);
+              trailCtx.strokeStyle =
+                `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
+              trailCtx.lineWidth = isSeed
+                ? 0.7 + trailReveal * 0.5
+                : 0.34 + trailReveal * 0.32;
+              trailCtx.stroke();
+            }
           }
 
           previousEnds[index * 2] = p.x2;
@@ -369,14 +384,17 @@ function PendulumField() {
       ctx.arc(originX, originY, 3, 0, Math.PI * 2);
       ctx.fill();
 
-      const drawStride =
-        trailReveal < 0.32 ? 8 : trailReveal < 0.68 ? 4 : 2;
+      const fieldStructureReveal = easeOutCubic(
+        (introElapsed - 3900) / 2300,
+      );
+      const seedPhysicalFade =
+        1 - easeOutCubic(Math.max(0, storyProgress - 0.035) / 0.1);
 
-      for (
-        let index = 0;
-        index < states.length;
-        index += drawStride
-      ) {
+      const drawPhysicalPendulum = (
+        index: number,
+        alphaScale: number,
+        widthScale: number,
+      ) => {
         const p = endPoint(
           states[index],
           originX,
@@ -384,9 +402,10 @@ function PendulumField() {
           arm,
         );
         const hue = (index / PENDULUM_COUNT) * 330 + 10;
-        const armSaturation = 8 + colorReveal * 84;
-        const armLightness = 82 - colorReveal * 16;
-        const armAlpha = 0.008 + structureReveal * 0.15;
+        const armSaturation = 4 + colorReveal * 70;
+        const armLightness = 86 - colorReveal * 18;
+        const armAlpha =
+          (0.03 + structureReveal * 0.52) * alphaScale;
 
         ctx.beginPath();
         ctx.moveTo(originX, originY);
@@ -394,15 +413,57 @@ function PendulumField() {
         ctx.lineTo(p.x2, p.y2);
         ctx.strokeStyle =
           `hsla(${hue}, ${armSaturation}%, ${armLightness}%, ${armAlpha})`;
-        ctx.lineWidth = 0.48 + structureReveal * 0.32;
+        ctx.lineWidth = (0.8 + structureReveal * 0.7) * widthScale;
         ctx.stroke();
 
-        if (index % 16 === 0) {
-          ctx.fillStyle =
-            `hsla(${hue}, ${18 + colorReveal * 78}%, 68%, ${0.03 + structureReveal * 0.62})`;
+        ctx.fillStyle =
+          `rgba(242, 240, 234, ${(0.08 + structureReveal * 0.72) * alphaScale})`;
+        ctx.beginPath();
+        ctx.arc(p.x1, p.y1, 2.8 * widthScale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p.x2, p.y2, 4.2 * widthScale, 0, Math.PI * 2);
+        ctx.fill();
+      };
+
+      drawPhysicalPendulum(
+        SEED_A,
+        seedPhysicalFade,
+        1,
+      );
+      drawPhysicalPendulum(
+        SEED_B,
+        seedPhysicalFade * 0.78,
+        0.94,
+      );
+
+      if (fieldStructureReveal > 0.02) {
+        const drawStride =
+          fieldStructureReveal < 0.45 ? 12 : 8;
+
+        for (
+          let index = 0;
+          index < states.length;
+          index += drawStride
+        ) {
+          if (index === SEED_A || index === SEED_B) continue;
+
+          const p = endPoint(
+            states[index],
+            originX,
+            originY,
+            arm,
+          );
+          const hue = (index / PENDULUM_COUNT) * 330 + 10;
+
           ctx.beginPath();
-          ctx.arc(p.x2, p.y2, 1.8, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.moveTo(originX, originY);
+          ctx.lineTo(p.x1, p.y1);
+          ctx.lineTo(p.x2, p.y2);
+          ctx.strokeStyle =
+            `hsla(${hue}, ${12 + colorReveal * 76}%, 66%, ${0.025 * fieldStructureReveal})`;
+          ctx.lineWidth = 0.42;
+          ctx.stroke();
         }
       }
 
@@ -476,20 +537,64 @@ function ChapterShell({
 }
 
 export function PortfolioExperience({ profile, stats }: Props) {
+  const [introReady, setIntroReady] = useState(false);
+
+  useEffect(() => {
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    if (reduced) {
+      setIntroReady(true);
+      return;
+    }
+
+    window.scrollTo(0, 0);
+
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+
+    const timer = window.setTimeout(() => {
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      setIntroReady(true);
+    }, 5900);
+
+    return () => {
+      window.clearTimeout(timer);
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+    };
+  }, []);
+
   return (
     <main className="portfolio">
-      <section className="pendulum-story" id="pendulum-story">
+      <section
+        className={`pendulum-story ${introReady ? "pendulum-story--ready" : "pendulum-story--intro"}`}
+        id="pendulum-story"
+      >
         <div className="pendulum-story__sticky">
           <PendulumField />
 
           <div className="pendulum-story__hud">
-            <span>CHAOS THEORY / 200 DOUBLE PENDULUMS</span>
+            <span>
+              {introReady
+                ? "STATE SPACE / 200 TRAJECTORIES"
+                : "DETERMINISTIC DIVERGENCE / TWO INITIAL STATES"}
+            </span>
             <span>Δθ = 0.1°</span>
           </div>
 
-          <div className="pendulum-story__scroll-hint">
-            scroll = camera depth
-          </div>
+          {introReady ? (
+            <div className="pendulum-story__scroll-hint">
+              scroll to enter the system
+            </div>
+          ) : null}
         </div>
 
         <div className="pendulum-story__chapters">
@@ -504,7 +609,7 @@ export function PortfolioExperience({ profile, stats }: Props) {
             </p>
             <p>
               Backend systems, distributed thinking, mathematical structure.
-              Scroll to move through the system rather than down a normal page.
+              Two nearly identical states become a field of radically different outcomes.
             </p>
           </ChapterShell>
 
@@ -685,13 +790,9 @@ export function PortfolioExperience({ profile, stats }: Props) {
           <ChapterShell
             index="06"
             eyebrow="OPEN CHANNEL"
-            title="Connect with me."
+            title="Open channel."
             side="center"
           >
-            <p>
-              The camera returns to the whole system. If the work feels
-              interesting, open a line.
-            </p>
             <a
               className="story-contact"
               href={profile.links.gmailCompose}
