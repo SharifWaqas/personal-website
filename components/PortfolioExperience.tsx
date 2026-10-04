@@ -19,6 +19,12 @@ type PendulumState = {
   w2: number;
 };
 
+type CameraPreset = {
+  scale: number;
+  focusX: number;
+  focusY: number;
+};
+
 const M1 = 1;
 const M2 = 1;
 const L1 = 1;
@@ -26,6 +32,17 @@ const L2 = 1;
 const G = 9.81;
 const PENDULUM_COUNT = 200;
 const ANGLE_DELTA = (0.1 * Math.PI) / 180;
+const CHAPTER_COUNT = 7;
+
+const CAMERA_PRESETS: CameraPreset[] = [
+  { scale: 1.0, focusX: 0.5, focusY: 0.48 },
+  { scale: 1.42, focusX: 0.5, focusY: 0.42 },
+  { scale: 1.75, focusX: 0.37, focusY: 0.58 },
+  { scale: 2.15, focusX: 0.63, focusY: 0.56 },
+  { scale: 2.65, focusX: 0.31, focusY: 0.62 },
+  { scale: 2.65, focusX: 0.69, focusY: 0.62 },
+  { scale: 1.18, focusX: 0.5, focusY: 0.5 },
+];
 
 function metric(value: number | null) {
   return value === null ? "—" : value.toLocaleString("en-US");
@@ -35,9 +52,20 @@ function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
 }
 
+function easeInOutCubic(value: number) {
+  const t = clamp01(value);
+  return t < 0.5
+    ? 4 * t * t * t
+    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
 function easeOutCubic(value: number) {
   const t = clamp01(value);
   return 1 - Math.pow(1 - t, 3);
+}
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
 }
 
 function stepPendulum(state: PendulumState, dt: number) {
@@ -102,8 +130,9 @@ function PendulumField() {
     const canvas = canvasRef.current;
     if (!canvas || reduced) return;
 
+    const story = document.getElementById("pendulum-story");
     const ctx = canvas.getContext("2d", { alpha: false });
-    if (!ctx) return;
+    if (!ctx || !story) return;
 
     const trailCanvas = document.createElement("canvas");
     const trailCtx = trailCanvas.getContext("2d");
@@ -116,8 +145,9 @@ function PendulumField() {
     let last = performance.now();
     let accumulator = 0;
     let hidden = false;
-    let inView = true;
     let frameCount = 0;
+    let storyProgress = 0;
+    let targetStoryProgress = 0;
     const introStartedAt = performance.now();
 
     const states = Array.from(
@@ -153,10 +183,16 @@ function PendulumField() {
       previousEnds.fill(Number.NaN);
     };
 
+    const updateStoryProgress = () => {
+      const rect = story.getBoundingClientRect();
+      const scrollable = Math.max(1, story.offsetHeight - window.innerHeight);
+      targetStoryProgress = clamp01(-rect.top / scrollable);
+    };
+
     const perturb = (event: PointerEvent) => {
       const px = event.clientX / Math.max(1, width) - 0.5;
       const py = event.clientY / Math.max(1, height) - 0.5;
-      const kick = (px * 0.7 + py * 0.3) * 0.000035;
+      const kick = (px * 0.7 + py * 0.3) * 0.000025;
 
       for (let index = 0; index < states.length; index += 1) {
         states[index].w2 += kick * (0.45 + index / states.length);
@@ -170,19 +206,27 @@ function PendulumField() {
       }
     };
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        inView = entry.isIntersecting;
-        if (inView) {
-          last = performance.now();
-        }
-      },
-      { threshold: 0.02 },
-    );
-    observer.observe(canvas);
+    const applyCamera = () => {
+      const chapterFloat = storyProgress * (CHAPTER_COUNT - 1);
+      const index = Math.min(
+        CHAPTER_COUNT - 2,
+        Math.max(0, Math.floor(chapterFloat)),
+      );
+      const local = easeInOutCubic(chapterFloat - index);
+      const current = CAMERA_PRESETS[index];
+      const next = CAMERA_PRESETS[index + 1];
+
+      const scale = lerp(current.scale, next.scale, local);
+      const focusX = lerp(current.focusX, next.focusX, local) * width;
+      const focusY = lerp(current.focusY, next.focusY, local) * height;
+
+      ctx.translate(width * 0.5, height * 0.5);
+      ctx.scale(scale, scale);
+      ctx.translate(-focusX, -focusY);
+    };
 
     const frame = (now: number) => {
-      if (hidden || !inView) {
+      if (hidden) {
         last = now;
         raf = requestAnimationFrame(frame);
         return;
@@ -191,6 +235,7 @@ function PendulumField() {
       const delta = Math.min(34, now - last);
       last = now;
       accumulator += delta / 1000;
+      storyProgress += (targetStoryProgress - storyProgress) * 0.085;
 
       const introElapsed = now - introStartedAt;
       const structureReveal = easeOutCubic(
@@ -228,7 +273,8 @@ function PendulumField() {
       if (frameCount % 2 === 0) {
         trailCtx.save();
         trailCtx.globalCompositeOperation = "destination-out";
-        trailCtx.fillStyle = `rgba(0,0,0,${0.058 - trailReveal * 0.032})`;
+        trailCtx.fillStyle =
+          `rgba(0,0,0,${0.058 - trailReveal * 0.032})`;
         trailCtx.fillRect(0, 0, width, height);
         trailCtx.restore();
 
@@ -246,14 +292,13 @@ function PendulumField() {
 
           if (Number.isFinite(px) && Number.isFinite(py)) {
             const hue = (index / PENDULUM_COUNT) * 330 + 10;
-
-            trailCtx.beginPath();
-            trailCtx.moveTo(px, py);
-            trailCtx.lineTo(p.x2, p.y2);
             const saturation = 14 + colorReveal * 82;
             const lightness = 78 - colorReveal * 14;
             const alpha = 0.012 + trailReveal * 0.46;
 
+            trailCtx.beginPath();
+            trailCtx.moveTo(px, py);
+            trailCtx.lineTo(p.x2, p.y2);
             trailCtx.strokeStyle =
               `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
             trailCtx.lineWidth = 0.38 + trailReveal * 0.42;
@@ -294,6 +339,8 @@ function PendulumField() {
       ctx.fillRect(0, 0, width, height);
 
       ctx.save();
+      applyCamera();
+
       ctx.globalAlpha = 0.12 + trailReveal * 0.88;
       ctx.drawImage(
         trailCanvas,
@@ -306,7 +353,7 @@ function PendulumField() {
         width,
         height,
       );
-      ctx.restore();
+      ctx.globalAlpha = 1;
 
       ctx.strokeStyle =
         `rgba(242, 240, 234, ${0.015 + structureReveal * 0.15})`;
@@ -325,7 +372,11 @@ function PendulumField() {
       const drawStride =
         trailReveal < 0.32 ? 8 : trailReveal < 0.68 ? 4 : 2;
 
-      for (let index = 0; index < states.length; index += drawStride) {
+      for (
+        let index = 0;
+        index < states.length;
+        index += drawStride
+      ) {
         const p = endPoint(
           states[index],
           originX,
@@ -333,15 +384,14 @@ function PendulumField() {
           arm,
         );
         const hue = (index / PENDULUM_COUNT) * 330 + 10;
+        const armSaturation = 8 + colorReveal * 84;
+        const armLightness = 82 - colorReveal * 16;
+        const armAlpha = 0.008 + structureReveal * 0.15;
 
         ctx.beginPath();
         ctx.moveTo(originX, originY);
         ctx.lineTo(p.x1, p.y1);
         ctx.lineTo(p.x2, p.y2);
-        const armSaturation = 8 + colorReveal * 84;
-        const armLightness = 82 - colorReveal * 16;
-        const armAlpha = 0.008 + structureReveal * 0.15;
-
         ctx.strokeStyle =
           `hsla(${hue}, ${armSaturation}%, ${armLightness}%, ${armAlpha})`;
         ctx.lineWidth = 0.48 + structureReveal * 0.32;
@@ -356,20 +406,24 @@ function PendulumField() {
         }
       }
 
+      ctx.restore();
+
       frameCount += 1;
       raf = requestAnimationFrame(frame);
     };
 
     resize();
+    updateStoryProgress();
     window.addEventListener("resize", resize);
+    window.addEventListener("scroll", updateStoryProgress, { passive: true });
     window.addEventListener("pointermove", perturb, { passive: true });
     document.addEventListener("visibilitychange", onVisibility);
     raf = requestAnimationFrame(frame);
 
     return () => {
       cancelAnimationFrame(raf);
-      observer.disconnect();
       window.removeEventListener("resize", resize);
+      window.removeEventListener("scroll", updateStoryProgress);
       window.removeEventListener("pointermove", perturb);
       document.removeEventListener("visibilitychange", onVisibility);
     };
@@ -377,7 +431,7 @@ function PendulumField() {
 
   if (reduced) {
     return (
-      <div className="pendulum-reduced pendulum-reduced--field" aria-hidden="true">
+      <div className="pendulum-reduced" aria-hidden="true">
         <span className="pendulum-reduced__pivot" />
         <span className="pendulum-reduced__arm pendulum-reduced__arm--one" />
         <span className="pendulum-reduced__arm pendulum-reduced__arm--two" />
@@ -394,139 +448,106 @@ function PendulumField() {
   );
 }
 
-
-function Flow({ items }: { items: string[] }) {
+function ChapterShell({
+  index,
+  eyebrow,
+  title,
+  side = "left",
+  children,
+}: {
+  index: string;
+  eyebrow: string;
+  title: string;
+  side?: "left" | "right" | "center";
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flow" aria-label={items.join(" to ")}>
-      {items.map((item, index) => (
-        <div className="flow__segment" key={item}>
-          <span className="flow__node">{item}</span>
-          {index < items.length - 1 ? (
-            <span className="flow__edge" aria-hidden="true">→</span>
-          ) : null}
+    <section className={`story-chapter story-chapter--${side}`}>
+      <div className="story-panel">
+        <div className="story-panel__meta">
+          <span>{index}</span>
+          <span>{eyebrow}</span>
         </div>
-      ))}
-    </div>
+        <h2>{title}</h2>
+        {children}
+      </div>
+    </section>
   );
 }
 
 export function PortfolioExperience({ profile, stats }: Props) {
   return (
     <main className="portfolio">
-      <section className="hero hero--chaos-field" id="top">
-        <PendulumField />
+      <section className="pendulum-story" id="pendulum-story">
+        <div className="pendulum-story__sticky">
+          <PendulumField />
 
-        <div className="hero__chrome hero__chrome--left hero__ui--delayed">
-          CHAOS THEORY / 200 DOUBLE PENDULUMS / Δθ = 0.1°
-        </div>
+          <div className="pendulum-story__hud">
+            <span>CHAOS THEORY / 200 DOUBLE PENDULUMS</span>
+            <span>Δθ = 0.1°</span>
+          </div>
 
-        <div className="hero__chrome hero__chrome--right hero__ui--delayed">
-          <span>
-            {signalSnapshot.github.authoredPublicRepoCommits} authored commits
-          </span>
-          <span>
-            {signalSnapshot.safestep.visitors} SafeStep visitors
-          </span>
-          <span>
-            {signalSnapshot.safestep.pageviews} pageviews
-          </span>
-        </div>
-
-        <div className="hero__identity hero__identity--delayed">
-          <p className="kicker">
-            {profile.year} · Computer Science + Mathematics
-          </p>
-          <h1>{profile.name}</h1>
-          <p className="hero__statement">
-            Backend systems, distributed thinking, mathematical structure.
-          </p>
-        </div>
-
-        <div className="hero__legend hero__ui--late">
-          <span>200 systems</span>
-          <span>0.1° between initial conditions</span>
-          <span>deterministic divergence</span>
-        </div>
-
-        <a className="scroll-cue hero__ui--late" href="#capabilities">
-          scroll to inspect ↓
-        </a>
-      </section>
-
-      <section className="section" id="capabilities">
-        <div className="section__rail">
-          <span>01</span>
-          <span>CAPABILITY TOPOLOGY</span>
-        </div>
-
-        <div className="section__content capability-content">
-          <p className="eyebrow">Languages / frameworks / systems / evidence</p>
-          <h2>Capability topology.</h2>
-          <p className="body-copy">
-            Every node maps to something I have actually built, measured,
-            deployed, tested, or am explicitly learning. Hover a node to inspect
-            the evidence behind it.
-          </p>
-
-          <div className="capability-topology">
-            {capabilityGroups.map((group, groupIndex) => (
-              <section className="capability-band" key={group.id}>
-                <header className="capability-band__header">
-                  <span className="capability-band__index">
-                    {String(groupIndex + 1).padStart(2, "0")}
-                  </span>
-                  <div>
-                    <h3>{group.label}</h3>
-                    <p>{group.description}</p>
-                  </div>
-                </header>
-
-                <div className="capability-grid">
-                  {group.capabilities.map((capability) => (
-                    <article
-                      className={`capability-node capability-node--${capability.tier.toLowerCase()}`}
-                      key={capability.name}
-                      tabIndex={0}
-                    >
-                      <div className="capability-node__head">
-                        <strong>{capability.name}</strong>
-                        <span>{capability.tier}</span>
-                      </div>
-                      <p className="capability-node__evidence">
-                        {capability.evidence}
-                      </p>
-                      <div className="capability-node__projects">
-                        {capability.projects.map((project) => (
-                          <span key={project}>{project}</span>
-                        ))}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            ))}
+          <div className="pendulum-story__scroll-hint">
+            scroll = camera depth
           </div>
         </div>
-      </section>
 
-      <section className="section section--split" id="resume">
-        <div className="section__rail">
-          <span>02</span>
-          <span>ENGINEERING RECORD</span>
-        </div>
-
-        <div className="section__content section__content--split">
-          <div>
-            <p className="eyebrow">Resume / source of truth</p>
-            <h2>Production work, not a badge wall.</h2>
-            <p className="body-copy">
-              Backend-focused software engineer building production systems in
-              Python/FastAPI and Next.js/React, with a double major in Computer
-              Science and Mathematics.
+        <div className="pendulum-story__chapters">
+          <ChapterShell
+            index="00"
+            eyebrow="INITIAL CONDITIONS"
+            title={profile.name}
+            side="left"
+          >
+            <p className="story-panel__lead">
+              {profile.year} · Computer Science + Mathematics
             </p>
+            <p>
+              Backend systems, distributed thinking, mathematical structure.
+              Scroll to move through the system rather than down a normal page.
+            </p>
+          </ChapterShell>
 
-            <div className="action-line">
-              <a href={profile.links.resume}>View resume →</a>
+          <ChapterShell
+            index="01"
+            eyebrow="CAPABILITY TOPOLOGY"
+            title="The stack, mapped to evidence."
+            side="right"
+          >
+            <div className="story-capabilities">
+              {capabilityGroups.map((group) => (
+                <div className="story-capability-group" key={group.id}>
+                  <strong>{group.label}</strong>
+                  <div>
+                    {group.capabilities.map((capability) => (
+                      <span
+                        key={capability.name}
+                        className={
+                          capability.tier === "EXPLORING"
+                            ? "is-exploring"
+                            : undefined
+                        }
+                        title={capability.evidence}
+                      >
+                        {capability.name}
+                        <small>{capability.tier}</small>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ChapterShell>
+
+          <ChapterShell
+            index="02"
+            eyebrow="ENGINEERING RECORD"
+            title="Resume / source of truth."
+            side="left"
+          >
+            <p>{resume.summary}</p>
+            <div className="story-actions">
+              <a href={profile.links.resume}>View full resume →</a>
               <a
                 href={profile.links.linkedin}
                 target="_blank"
@@ -535,16 +556,7 @@ export function PortfolioExperience({ profile, stats }: Props) {
                 LinkedIn ↗
               </a>
             </div>
-          </div>
-
-          <a className="resume-preview" href={profile.links.resume}>
-            <div className="resume-preview__head">
-              <strong>MUHAMMAD SHARIF</strong>
-              <span>BACKEND / SYSTEMS</span>
-            </div>
-            <div className="resume-preview__rule" />
-            <p>{resume.summary}</p>
-            <div className="resume-preview__grid">
+            <div className="story-mini-grid">
               <span>Python</span>
               <span>FastAPI</span>
               <span>PostgreSQL</span>
@@ -552,255 +564,160 @@ export function PortfolioExperience({ profile, stats }: Props) {
               <span>Docker</span>
               <span>OpenAI / NIM</span>
             </div>
-            <div className="resume-preview__footer">
-              Open full resume ↗
-            </div>
-          </a>
-        </div>
-      </section>
+          </ChapterShell>
 
-      <section className="section" id="metrics">
-        <div className="section__rail">
-          <span>03</span>
-          <span>MEASURED SIGNALS</span>
-        </div>
-
-        <div className="section__content">
-          <p className="eyebrow">Repository + production observability</p>
-          <h2>Instrumentation over decoration.</h2>
-
-          <div className="metric-grid">
-            <div className="metric-block">
-              <span className="metric-block__value">
-                {signalSnapshot.github.authoredPublicRepoCommits}
-              </span>
-              <span className="metric-block__label">
-                authored commits across tracked public repos · snapshot{" "}
-                {signalSnapshot.capturedAt}
-              </span>
-            </div>
-            <div className="metric-block">
-              <span className="metric-block__value">
-                {signalSnapshot.safestep.visitors}
-              </span>
-              <span className="metric-block__label">
-                SafeStep visitors · {signalSnapshot.safestep.window}
-              </span>
-            </div>
-            <div className="metric-block">
-              <span className="metric-block__value">
-                {signalSnapshot.safestep.pageviews}
-              </span>
-              <span className="metric-block__label">
-                SafeStep pageviews · Vercel Web Analytics
-              </span>
-            </div>
-            <div className="metric-block">
-              <span className="metric-block__value">124</span>
-              <span className="metric-block__label">
-                SafeStep pytest suite
-              </span>
-            </div>
-            <div className="metric-block">
-              <span className="metric-block__value">921+</span>
-              <span className="metric-block__label">
-                ingestion events / second
-              </span>
-            </div>
-            {stats.github.commitContributions !== null ? (
-              <div className="metric-block">
-                <span className="metric-block__value">
-                  {metric(stats.github.commitContributions)}
-                </span>
-                <span className="metric-block__label">
-                  GitHub commit contributions / last 12 months
-                </span>
+          <ChapterShell
+            index="03"
+            eyebrow="MEASURED SIGNALS"
+            title="Instrumentation over decoration."
+            side="right"
+          >
+            <div className="story-metrics">
+              <div>
+                <strong>
+                  {signalSnapshot.github.authoredPublicRepoCommits}
+                </strong>
+                <span>authored public-repo commits</span>
               </div>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      <section className="project" id="safestep">
-        <div className="project__index">04 / SAFESTEP</div>
-        <div className="project__header">
-          <p className="eyebrow">AI-powered digital safety companion</p>
-          <h2>SafeStep</h2>
-          <p>
-            A production full-stack system for helping older adults understand
-            suspicious screenshots, emails, messages, and websites.
-          </p>
-        </div>
-
-        <Flow
-          items={[
-            "Upload",
-            "Auth",
-            "Analysis service",
-            "Vision provider",
-            "Risk scoring",
-            "Telemetry",
-          ]}
-        />
-
-        <div className="project__stats">
-          <span>
-            <strong>{signalSnapshot.safestep.visitors}</strong>
-            production visitors
-          </span>
-          <span>
-            <strong>{signalSnapshot.safestep.pageviews}</strong>
-            production pageviews
-          </span>
-          <span><strong>8</strong> repository classes</span>
-          <span><strong>7</strong> normalized PostgreSQL entities</span>
-          <span><strong>13</strong> parser tests</span>
-          <span><strong>124</strong> pytest tests</span>
-        </div>
-
-        <div className="project__detail-grid">
-          <div>
-            <h3>Architecture</h3>
-            <p>
-              Modular monolith: routes → services → repositories, with async
-              SQLAlchemy, Alembic migrations, JWT sessions, Cloudflare R2, and
-              provider-agnostic multimodal AI.
-            </p>
-          </div>
-          <div>
-            <h3>Observability</h3>
-            <p>
-              Correlation IDs propagate from request middleware through the
-              analysis service and AI orchestrator, while structured telemetry
-              is streamed asynchronously into the log analytics engine.
-            </p>
-          </div>
-          <div>
-            <h3>Failure thinking</h3>
-            <p>
-              Session revocation, indistinguishable authorization responses,
-              deterministic risk scoring, provider fallback, and non-blocking
-              telemetry paths keep user-facing requests isolated from failures.
-            </p>
-          </div>
-        </div>
-
-        <p className="project__source">
-          Traffic snapshot: {signalSnapshot.safestep.window} ·{" "}
-          {signalSnapshot.safestep.source}
-        </p>
-
-        <a
-          className="project__link"
-          href="https://github.com/SharifWaqas/safestep"
-          target="_blank"
-          rel="noreferrer"
-        >
-          inspect repository ↗
-        </a>
-      </section>
-
-      <section className="project project--analytics" id="log-analytics">
-        <div className="project__index">05 / INGESTION ENGINE</div>
-        <div className="project__header">
-          <p className="eyebrow">High-throughput backend pipeline</p>
-          <h2>Log Analytics + Ingestion Engine</h2>
-          <p>
-            Producer-consumer ingestion, queue buffering, worker batching,
-            retries, cursor pagination, and observability analytics.
-          </p>
-        </div>
-
-        <div className="throughput">
-          <div className="throughput__label">sustained throughput</div>
-          <div className="throughput__track">
-            <div className="throughput__before">
-              <span>46</span>
+              <div>
+                <strong>{signalSnapshot.safestep.visitors}</strong>
+                <span>SafeStep visitors</span>
+              </div>
+              <div>
+                <strong>{signalSnapshot.safestep.pageviews}</strong>
+                <span>SafeStep pageviews</span>
+              </div>
+              <div>
+                <strong>921+</strong>
+                <span>ingestion events/sec</span>
+              </div>
+              <div>
+                <strong>124</strong>
+                <span>SafeStep pytest tests</span>
+              </div>
+              {stats.github.commitContributions !== null ? (
+                <div>
+                  <strong>
+                    {metric(stats.github.commitContributions)}
+                  </strong>
+                  <span>GitHub commits / 12m</span>
+                </div>
+              ) : null}
             </div>
-            <div className="throughput__after">
-              <span>921+</span>
+          </ChapterShell>
+
+          <ChapterShell
+            index="04"
+            eyebrow="PROJECT / SAFESTEP"
+            title="AI safety, treated like a real system."
+            side="left"
+          >
+            <p>
+              SafeStep helps older adults understand suspicious screenshots,
+              messages, emails, and websites through a production multimodal
+              analysis pipeline.
+            </p>
+            <div className="story-flow">
+              <span>Upload</span>
+              <b>→</b>
+              <span>Auth</span>
+              <b>→</b>
+              <span>Analysis</span>
+              <b>→</b>
+              <span>Vision</span>
+              <b>→</b>
+              <span>Risk</span>
+              <b>→</b>
+              <span>Telemetry</span>
             </div>
-          </div>
-          <div className="throughput__caption">
-            events/sec · approximately 20× improvement
-          </div>
-        </div>
+            <div className="story-project-facts">
+              <span><strong>8</strong> repository classes</span>
+              <span><strong>7</strong> normalized entities</span>
+              <span><strong>13</strong> parser tests</span>
+              <span><strong>124</strong> pytest tests</span>
+            </div>
+            <a
+              className="story-project-link"
+              href="https://github.com/SharifWaqas/safestep"
+              target="_blank"
+              rel="noreferrer"
+            >
+              inspect SafeStep ↗
+            </a>
+          </ChapterShell>
 
-        <Flow
-          items={[
-            "HTTP ingest",
-            "Queue buffer",
-            "4 workers",
-            "Batch write",
-            "PostgreSQL",
-            "Analytics API",
-          ]}
-        />
-
-        <div className="project__detail-grid">
-          <div>
-            <h3>Backpressure</h3>
-            <p>
-              Queue-based buffering separates request ingestion from database
-              persistence so bursts do not directly become write contention.
-            </p>
-          </div>
-          <div>
-            <h3>Analytics</h3>
-            <p>
-              Cursor pagination, time-window filtering, service/status filters,
-              plus p50/p95/p99 latency, HTTP error rate, and AI-provider
-              fallback-rate endpoints.
-            </p>
-          </div>
-          <div>
-            <h3>Reliability</h3>
-            <p>
-              Retries and failed-log fallback routing isolate bad records
-              instead of silently dropping them under sustained load.
-            </p>
-          </div>
-        </div>
-
-        <a
-          className="project__link"
-          href="https://github.com/SharifWaqas/log-analytics-backend"
-          target="_blank"
-          rel="noreferrer"
-        >
-          inspect repository ↗
-        </a>
-      </section>
-
-      <section className="contact-section" id="contact">
-        <p className="eyebrow">06 / OPEN CHANNEL</p>
-        <a
-          className="contact-phrase"
-          href={profile.links.gmailCompose}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Connect with me
-        </a>
-        <p>
-          Opens Gmail with a draft addressed to {profile.email}.
-        </p>
-        <div className="contact-links">
-          <a href={profile.links.mailto}>mail client fallback</a>
-          <a
-            href={profile.links.linkedin}
-            target="_blank"
-            rel="noreferrer"
+          <ChapterShell
+            index="05"
+            eyebrow="PROJECT / INGESTION ENGINE"
+            title="46 → 921+ events per second."
+            side="right"
           >
-            LinkedIn
-          </a>
-          <a
-            href={profile.links.github}
-            target="_blank"
-            rel="noreferrer"
+            <p>
+              Queue buffering, four background workers, batched PostgreSQL
+              writes, retries, cursor pagination, and observability analytics.
+            </p>
+            <div className="story-throughput">
+              <span className="story-throughput__before">46</span>
+              <span className="story-throughput__line" />
+              <span className="story-throughput__after">921+</span>
+            </div>
+            <div className="story-flow">
+              <span>HTTP</span>
+              <b>→</b>
+              <span>Queue</span>
+              <b>→</b>
+              <span>4 workers</span>
+              <b>→</b>
+              <span>Batch write</span>
+              <b>→</b>
+              <span>Postgres</span>
+            </div>
+            <a
+              className="story-project-link"
+              href="https://github.com/SharifWaqas/log-analytics-backend"
+              target="_blank"
+              rel="noreferrer"
+            >
+              inspect ingestion engine ↗
+            </a>
+          </ChapterShell>
+
+          <ChapterShell
+            index="06"
+            eyebrow="OPEN CHANNEL"
+            title="Connect with me."
+            side="center"
           >
-            GitHub
-          </a>
+            <p>
+              The camera returns to the whole system. If the work feels
+              interesting, open a line.
+            </p>
+            <a
+              className="story-contact"
+              href={profile.links.gmailCompose}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Connect with me ↗
+            </a>
+            <div className="story-actions story-actions--center">
+              <a href={profile.links.mailto}>Mail fallback</a>
+              <a
+                href={profile.links.linkedin}
+                target="_blank"
+                rel="noreferrer"
+              >
+                LinkedIn
+              </a>
+              <a
+                href={profile.links.github}
+                target="_blank"
+                rel="noreferrer"
+              >
+                GitHub
+              </a>
+            </div>
+          </ChapterShell>
         </div>
       </section>
     </main>
