@@ -214,3 +214,31 @@ Performance is a feature.
 - keep scrolling responsive while the simulation is active
 
 The site must never make a normal laptop feel unusably slow.
+
+
+## October 4 visual revision
+
+The chaos hero should visually evoke the supplied multi-pendulum reference without copying its poster layout.
+
+Implementation target:
+- simulate 200 double pendulums
+- initial angle separation: 0.1 degrees
+- rainbow hue assignment across the ensemble
+- persistent trajectory traces that accumulate into a dense chaotic field
+- dark near-black background
+- restrained mechanical arm rendering underneath the colored traces
+- keep the mathematics legible through small system labels rather than decorative equations
+- simulate all 200 systems but optimize trail persistence and pause rendering when the hero leaves the viewport
+
+Cursor:
+- desktop/fine-pointer devices get a small Daffy-themed cursor companion
+- keep the normal pointer visible
+- companion follows with slight interpolation/lag
+- hide on touch/coarse-pointer devices
+- implementation must remain lightweight
+
+Measured signals:
+- show authored GitHub commit count across tracked public repositories
+- show SafeStep production visitor and pageview counts
+- label Vercel analytics values with their measurement window
+- if a value is a snapshot rather than live runtime data, say so explicitly
