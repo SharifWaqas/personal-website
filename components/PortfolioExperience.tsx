@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Profile } from "@/content/profile";
 import { resume } from "@/content/resume";
+import { signalSnapshot } from "@/content/signals";
 import type { PortfolioStats } from "@/lib/stats";
 
 type Props = {
@@ -17,13 +18,13 @@ type PendulumState = {
   w2: number;
 };
 
-type Point = { x: number; y: number };
-
 const M1 = 1;
 const M2 = 1;
 const L1 = 1;
 const L2 = 1;
 const G = 9.81;
+const PENDULUM_COUNT = 200;
+const ANGLE_DELTA = (0.1 * Math.PI) / 180;
 
 function metric(value: number | null) {
   return value === null ? "—" : value.toLocaleString("en-US");
@@ -33,7 +34,8 @@ function stepPendulum(state: PendulumState, dt: number) {
   const { a1, a2, w1, w2 } = state;
   const c = Math.cos(a1 - a2);
   const s = Math.sin(a1 - a2);
-  const denominator = 2 * M1 + M2 - M2 * Math.cos(2 * a1 - 2 * a2);
+  const denominator =
+    2 * M1 + M2 - M2 * Math.cos(2 * a1 - 2 * a2);
 
   const aa1 =
     (
@@ -74,7 +76,7 @@ function endPoint(
   return { x1, y1, x2, y2 };
 }
 
-function PendulumCanvas() {
+function PendulumField() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [reduced, setReduced] = useState(false);
 
@@ -93,6 +95,10 @@ function PendulumCanvas() {
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
+    const trailCanvas = document.createElement("canvas");
+    const trailCtx = trailCanvas.getContext("2d");
+    if (!trailCtx) return;
+
     let width = 0;
     let height = 0;
     let dpr = 1;
@@ -100,40 +106,50 @@ function PendulumCanvas() {
     let last = performance.now();
     let accumulator = 0;
     let hidden = false;
+    let inView = true;
+    let frameCount = 0;
 
-    const a: PendulumState = {
-      a1: Math.PI * 0.78,
-      a2: Math.PI * 0.56,
-      w1: 0,
-      w2: 0,
-    };
-    const b: PendulumState = {
-      a1: Math.PI * 0.780015,
-      a2: Math.PI * 0.56001,
-      w1: 0,
-      w2: 0,
-    };
+    const states = Array.from(
+      { length: PENDULUM_COUNT },
+      (_, index): PendulumState => ({
+        a1:
+          Math.PI * 0.72 +
+          (index - (PENDULUM_COUNT - 1) / 2) * ANGLE_DELTA,
+        a2: Math.PI * 0.46,
+        w1: 0,
+        w2: 0,
+      }),
+    );
 
-    const trailA: Point[] = [];
-    const trailB: Point[] = [];
-    const maxTrail = 260;
+    const previousEnds = new Float32Array(PENDULUM_COUNT * 2);
+    previousEnds.fill(Number.NaN);
 
     const resize = () => {
       width = window.innerWidth;
       height = window.innerHeight;
-      dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.2);
+
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
+
+      trailCanvas.width = Math.round(width * dpr);
+      trailCanvas.height = Math.round(height * dpr);
+
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      trailCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      previousEnds.fill(Number.NaN);
     };
 
     const perturb = (event: PointerEvent) => {
       const px = event.clientX / Math.max(1, width) - 0.5;
       const py = event.clientY / Math.max(1, height) - 0.5;
-      b.w1 += px * 0.0007;
-      b.w2 += py * 0.0007;
+      const kick = (px * 0.7 + py * 0.3) * 0.000035;
+
+      for (let index = 0; index < states.length; index += 1) {
+        states[index].w2 += kick * (0.45 + index / states.length);
+      }
     };
 
     const onVisibility = () => {
@@ -143,110 +159,130 @@ function PendulumCanvas() {
       }
     };
 
-    const drawTrail = (trail: Point[], alpha: number, lineWidth: number) => {
-      if (trail.length < 2) return;
-      ctx.beginPath();
-      ctx.moveTo(trail[0].x, trail[0].y);
-      for (let i = 1; i < trail.length; i += 1) {
-        ctx.lineTo(trail[i].x, trail[i].y);
-      }
-      ctx.strokeStyle = `rgba(235, 234, 229, ${alpha})`;
-      ctx.lineWidth = lineWidth;
-      ctx.stroke();
-    };
-
-    const drawSystem = (
-      p: ReturnType<typeof endPoint>,
-      alpha: number,
-      accent: boolean,
-    ) => {
-      const originX = width * 0.5;
-      const originY = Math.max(110, height * 0.22);
-
-      ctx.strokeStyle = `rgba(239, 238, 232, ${alpha})`;
-      ctx.lineWidth = accent ? 1.4 : 1;
-      ctx.beginPath();
-      ctx.moveTo(originX, originY);
-      ctx.lineTo(p.x1, p.y1);
-      ctx.lineTo(p.x2, p.y2);
-      ctx.stroke();
-
-      ctx.fillStyle = `rgba(239, 238, 232, ${Math.min(1, alpha + 0.12)})`;
-      ctx.beginPath();
-      ctx.arc(p.x1, p.y1, accent ? 4 : 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(p.x2, p.y2, accent ? 6 : 4, 0, Math.PI * 2);
-      ctx.fill();
-    };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting;
+        if (inView) {
+          last = performance.now();
+        }
+      },
+      { threshold: 0.02 },
+    );
+    observer.observe(canvas);
 
     const frame = (now: number) => {
-      if (hidden) {
+      if (hidden || !inView) {
+        last = now;
         raf = requestAnimationFrame(frame);
         return;
       }
 
-      const delta = Math.min(32, now - last);
+      const delta = Math.min(34, now - last);
       last = now;
       accumulator += delta / 1000;
 
-      const fixed = 1 / 120;
-      while (accumulator >= fixed) {
-        stepPendulum(a, fixed);
-        stepPendulum(b, fixed);
+      const fixed = 1 / 100;
+      let steps = 0;
+
+      while (accumulator >= fixed && steps < 3) {
+        for (const state of states) {
+          stepPendulum(state, fixed);
+        }
         accumulator -= fixed;
+        steps += 1;
       }
 
-      const arm = Math.min(width, height) * 0.19;
+      const arm = Math.min(width, height) * 0.17;
       const originX = width * 0.5;
-      const originY = Math.max(110, height * 0.22);
-      const pa = endPoint(a, originX, originY, arm);
-      const pb = endPoint(b, originX, originY, arm);
+      const originY = Math.max(110, height * 0.19);
 
-      trailA.push({ x: pa.x2, y: pa.y2 });
-      trailB.push({ x: pb.x2, y: pb.y2 });
-      if (trailA.length > maxTrail) trailA.shift();
-      if (trailB.length > maxTrail) trailB.shift();
+      if (frameCount % 2 === 0) {
+        trailCtx.save();
+        trailCtx.globalCompositeOperation = "destination-out";
+        trailCtx.fillStyle = "rgba(0,0,0,0.022)";
+        trailCtx.fillRect(0, 0, width, height);
+        trailCtx.restore();
 
-      ctx.fillStyle = "#07080a";
+        trailCtx.globalCompositeOperation = "source-over";
+
+        for (let index = 0; index < states.length; index += 1) {
+          const p = endPoint(
+            states[index],
+            originX,
+            originY,
+            arm,
+          );
+          const px = previousEnds[index * 2];
+          const py = previousEnds[index * 2 + 1];
+
+          if (Number.isFinite(px) && Number.isFinite(py)) {
+            const hue = (index / PENDULUM_COUNT) * 330 + 10;
+
+            trailCtx.beginPath();
+            trailCtx.moveTo(px, py);
+            trailCtx.lineTo(p.x2, p.y2);
+            trailCtx.strokeStyle = `hsla(${hue}, 96%, 64%, 0.52)`;
+            trailCtx.lineWidth = 0.72;
+            trailCtx.stroke();
+          }
+
+          previousEnds[index * 2] = p.x2;
+          previousEnds[index * 2 + 1] = p.y2;
+        }
+      }
+
+      ctx.fillStyle = "#050607";
       ctx.fillRect(0, 0, width, height);
-
-      const scroll = Math.min(
-        1,
-        window.scrollY / Math.max(1, window.innerHeight),
+      ctx.drawImage(
+        trailCanvas,
+        0,
+        0,
+        trailCanvas.width,
+        trailCanvas.height,
+        0,
+        0,
+        width,
+        height,
       );
 
-      ctx.strokeStyle = "rgba(239, 238, 232, 0.08)";
+      ctx.strokeStyle = "rgba(242, 240, 234, 0.16)";
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(width * 0.5 - 120, originY);
-      ctx.lineTo(width * 0.5 + 120, originY);
+      ctx.moveTo(originX - 126, originY);
+      ctx.lineTo(originX + 126, originY);
       ctx.stroke();
 
-      ctx.fillStyle = "rgba(239, 238, 232, 0.5)";
+      ctx.fillStyle = "rgba(242, 240, 234, 0.7)";
       ctx.beginPath();
-      ctx.arc(width * 0.5, originY, 3, 0, Math.PI * 2);
+      ctx.arc(originX, originY, 3, 0, Math.PI * 2);
       ctx.fill();
 
-      drawTrail(trailA, 0.34 + scroll * 0.12, 1.25);
-      drawTrail(trailB, 0.17 + scroll * 0.08, 1);
+      for (let index = 0; index < states.length; index += 2) {
+        const p = endPoint(
+          states[index],
+          originX,
+          originY,
+          arm,
+        );
+        const hue = (index / PENDULUM_COUNT) * 330 + 10;
 
-      drawSystem(pb, 0.36, false);
-      drawSystem(pa, 0.88, true);
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(p.x1, p.y1);
+        ctx.lineTo(p.x2, p.y2);
+        ctx.strokeStyle = `hsla(${hue}, 92%, 66%, 0.14)`;
+        ctx.lineWidth = 0.75;
+        ctx.stroke();
 
-      ctx.font = "10px ui-monospace, SFMono-Regular, Consolas, monospace";
-      ctx.fillStyle = "rgba(170, 173, 179, 0.72)";
-      ctx.fillText(
-        `Δθ₁ = ${Math.abs(a.a1 - b.a1).toExponential(2)}`,
-        24,
-        Math.max(92, height * 0.18),
-      );
-      ctx.fillText(
-        `Δθ₂ = ${Math.abs(a.a2 - b.a2).toExponential(2)}`,
-        24,
-        Math.max(110, height * 0.18 + 18),
-      );
+        if (index % 16 === 0) {
+          ctx.fillStyle = `hsla(${hue}, 96%, 67%, 0.72)`;
+          ctx.beginPath();
+          ctx.arc(p.x2, p.y2, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
 
+      frameCount += 1;
       raf = requestAnimationFrame(frame);
     };
 
@@ -258,6 +294,7 @@ function PendulumCanvas() {
 
     return () => {
       cancelAnimationFrame(raf);
+      observer.disconnect();
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", perturb);
       document.removeEventListener("visibilitychange", onVisibility);
@@ -266,7 +303,7 @@ function PendulumCanvas() {
 
   if (reduced) {
     return (
-      <div className="pendulum-reduced" aria-hidden="true">
+      <div className="pendulum-reduced pendulum-reduced--field" aria-hidden="true">
         <span className="pendulum-reduced__pivot" />
         <span className="pendulum-reduced__arm pendulum-reduced__arm--one" />
         <span className="pendulum-reduced__arm pendulum-reduced__arm--two" />
@@ -283,11 +320,79 @@ function PendulumCanvas() {
   );
 }
 
-function Flow({
-  items,
-}: {
-  items: string[];
-}) {
+function CursorDaffy() {
+  const followerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const follower = followerRef.current;
+    if (!follower) return;
+
+    const finePointer = window.matchMedia("(pointer: fine)");
+    if (!finePointer.matches) return;
+
+    let raf = 0;
+    let x = -100;
+    let y = -100;
+    let targetX = -100;
+    let targetY = -100;
+    let visible = false;
+
+    const move = (event: PointerEvent) => {
+      targetX = event.clientX + 20;
+      targetY = event.clientY + 18;
+
+      if (!visible) {
+        visible = true;
+        x = targetX;
+        y = targetY;
+        follower.dataset.visible = "true";
+      }
+    };
+
+    const leave = () => {
+      follower.dataset.visible = "false";
+      visible = false;
+    };
+
+    const tick = () => {
+      x += (targetX - x) * 0.22;
+      y += (targetY - y) * 0.22;
+      follower.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      raf = requestAnimationFrame(tick);
+    };
+
+    window.addEventListener("pointermove", move, { passive: true });
+    document.documentElement.addEventListener("mouseleave", leave);
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("pointermove", move);
+      document.documentElement.removeEventListener("mouseleave", leave);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={followerRef}
+      className="cursor-daffy"
+      aria-hidden="true"
+    >
+      <div className="cursor-daffy__character">
+        <span className="cursor-daffy__tuft" />
+        <span className="cursor-daffy__head">
+          <i className="cursor-daffy__eye cursor-daffy__eye--left" />
+          <i className="cursor-daffy__eye cursor-daffy__eye--right" />
+          <i className="cursor-daffy__beak" />
+        </span>
+        <span className="cursor-daffy__neck" />
+      </div>
+      <span className="cursor-daffy__label">DAFFY</span>
+    </div>
+  );
+}
+
+function Flow({ items }: { items: string[] }) {
   return (
     <div className="flow" aria-label={items.join(" to ")}>
       {items.map((item, index) => (
@@ -310,16 +415,25 @@ export function PortfolioExperience({ profile, stats }: Props) {
 
   return (
     <main className="portfolio">
-      <section className="hero" id="top">
-        <PendulumCanvas />
+      <CursorDaffy />
+
+      <section className="hero hero--chaos-field" id="top">
+        <PendulumField />
 
         <div className="hero__chrome hero__chrome--left">
-          CHAOTIC SYSTEM / DOUBLE PENDULUM
+          CHAOS THEORY / 200 DOUBLE PENDULUMS / Δθ = 0.1°
         </div>
 
         <div className="hero__chrome hero__chrome--right">
-          <span>{metric(stats.github.commitContributions)} commits / 12m</span>
-          <span>{metric(stats.leetcode.totalSolved)} LeetCode</span>
+          <span>
+            {signalSnapshot.github.authoredPublicRepoCommits} authored commits
+          </span>
+          <span>
+            {signalSnapshot.safestep.visitors} SafeStep visitors
+          </span>
+          <span>
+            {signalSnapshot.safestep.pageviews} pageviews
+          </span>
         </div>
 
         <div className="hero__identity">
@@ -333,9 +447,9 @@ export function PortfolioExperience({ profile, stats }: Props) {
         </div>
 
         <div className="hero__legend">
-          <span>same system</span>
-          <span>near-identical initial conditions</span>
-          <span>diverging state</span>
+          <span>200 systems</span>
+          <span>0.1° between initial conditions</span>
+          <span>deterministic divergence</span>
         </div>
 
         <a className="scroll-cue" href="#capabilities">
@@ -429,28 +543,37 @@ export function PortfolioExperience({ profile, stats }: Props) {
       <section className="section" id="metrics">
         <div className="section__rail">
           <span>03</span>
-          <span>LIVE SIGNALS</span>
+          <span>MEASURED SIGNALS</span>
         </div>
 
         <div className="section__content">
-          <p className="eyebrow">Measured activity</p>
+          <p className="eyebrow">Repository + production observability</p>
           <h2>Instrumentation over decoration.</h2>
 
           <div className="metric-grid">
             <div className="metric-block">
               <span className="metric-block__value">
-                {metric(stats.github.commitContributions)}
+                {signalSnapshot.github.authoredPublicRepoCommits}
               </span>
               <span className="metric-block__label">
-                GitHub commit contributions / last 12 months
+                authored commits across tracked public repos · snapshot{" "}
+                {signalSnapshot.capturedAt}
               </span>
             </div>
             <div className="metric-block">
               <span className="metric-block__value">
-                {metric(stats.github.totalContributions)}
+                {signalSnapshot.safestep.visitors}
               </span>
               <span className="metric-block__label">
-                total GitHub contributions / last 12 months
+                SafeStep visitors · {signalSnapshot.safestep.window}
+              </span>
+            </div>
+            <div className="metric-block">
+              <span className="metric-block__value">
+                {signalSnapshot.safestep.pageviews}
+              </span>
+              <span className="metric-block__label">
+                SafeStep pageviews · Vercel Web Analytics
               </span>
             </div>
             <div className="metric-block">
@@ -465,6 +588,16 @@ export function PortfolioExperience({ profile, stats }: Props) {
                 ingestion events / second
               </span>
             </div>
+            {stats.github.commitContributions !== null ? (
+              <div className="metric-block">
+                <span className="metric-block__value">
+                  {metric(stats.github.commitContributions)}
+                </span>
+                <span className="metric-block__label">
+                  GitHub commit contributions / last 12 months
+                </span>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -492,6 +625,14 @@ export function PortfolioExperience({ profile, stats }: Props) {
         />
 
         <div className="project__stats">
+          <span>
+            <strong>{signalSnapshot.safestep.visitors}</strong>
+            production visitors
+          </span>
+          <span>
+            <strong>{signalSnapshot.safestep.pageviews}</strong>
+            production pageviews
+          </span>
           <span><strong>8</strong> repository classes</span>
           <span><strong>7</strong> normalized PostgreSQL entities</span>
           <span><strong>13</strong> parser tests</span>
@@ -524,6 +665,11 @@ export function PortfolioExperience({ profile, stats }: Props) {
             </p>
           </div>
         </div>
+
+        <p className="project__source">
+          Traffic snapshot: {signalSnapshot.safestep.window} ·{" "}
+          {signalSnapshot.safestep.source}
+        </p>
 
         <a
           className="project__link"
