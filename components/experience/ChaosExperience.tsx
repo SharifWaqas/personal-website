@@ -38,15 +38,12 @@ export function ChaosExperience({
   }, [reducedMotion]);
 
   const externalLinks = useMemo(
-    () =>
-      [
-        ["Resume", profile.links.resume],
-        ["GitHub", profile.links.github],
-        ["LinkedIn", profile.links.linkedin],
-      ].filter(
-        (entry): entry is [string, string] =>
-          typeof entry[1] === "string" && entry[1].length > 0,
-      ),
+    () => [
+      ["Resume", profile.links.resume],
+      ["GitHub", profile.links.github],
+      ["LinkedIn", profile.links.linkedin],
+      ["Connect with me", profile.links.gmailCompose],
+    ] as const,
     [profile.links],
   );
 
