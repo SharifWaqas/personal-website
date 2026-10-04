@@ -2263,3 +2263,97 @@ body {
     margin-top: -100svh;
   }
 }
+
+
+/* Protected opening: pendulum first, portfolio second. */
+.pendulum-story--intro .pendulum-story__chapters {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.pendulum-story--ready .pendulum-story__chapters {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear;
+}
+
+.pendulum-story--intro .pendulum-story__hud {
+  opacity: 0;
+  animation:
+    state-space-hud-in 900ms cubic-bezier(0.22, 1, 0.36, 1)
+    3.9s forwards;
+}
+
+.pendulum-story--ready .pendulum-story__hud {
+  opacity: 1;
+  transition: opacity 500ms ease;
+}
+
+.pendulum-story--ready .pendulum-story__scroll-hint {
+  animation:
+    state-space-hint-in 700ms cubic-bezier(0.22, 1, 0.36, 1)
+    250ms both;
+}
+
+.pendulum-story--intro .pendulum-story__sticky::before {
+  opacity: 0;
+  animation:
+    state-space-atmosphere-in 2.6s ease-out 1.4s forwards;
+}
+
+.pendulum-story--ready .pendulum-story__sticky::before {
+  opacity: 1;
+}
+
+.story-chapter--center .story-contact {
+  margin-top: 30px;
+}
+
+@keyframes state-space-hud-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 0.66;
+    transform: translateY(0);
+  }
+}
+
+@keyframes state-space-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes state-space-atmosphere-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pendulum-story--intro .pendulum-story__chapters,
+  .pendulum-story--ready .pendulum-story__chapters,
+  .pendulum-story--intro .pendulum-story__hud,
+  .pendulum-story--ready .pendulum-story__hud,
+  .pendulum-story--ready .pendulum-story__scroll-hint,
+  .pendulum-story--intro .pendulum-story__sticky::before {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
