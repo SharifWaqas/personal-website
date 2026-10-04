@@ -22,21 +22,47 @@ Primary interests:
 - creative technology
 - mathematical systems / chaos-inspired interaction
 
-## Skills
+## Resume-backed demonstrated stack
 
-Current demonstrated stack:
+Languages:
 - Python
-- C++
+- TypeScript
 - SQL
+- C++
+
+Backend:
 - FastAPI
-- PostgreSQL
-- SQLAlchemy
+- SQLAlchemy 2.0 (Async)
+- Alembic
+- Pydantic
+- JWT
 - REST APIs
-- JWT / authentication
+- AsyncIO
+- Structured Logging / Observability
+
+Frontend:
+- Next.js
+- React
+- Tailwind CSS
+
+Databases & cloud:
+- PostgreSQL
 - Docker
-- Git
-- GitHub
+- Docker Compose
+- Cloudflare R2
+- Vercel
+- Render
+
+AI:
 - OpenAI API
+- NVIDIA NIM
+
+Testing & tools:
+- pytest
+- AsyncMock
+- Postman
+- Git
+- Linux
 
 Currently learning / developing:
 - Go
@@ -60,19 +86,19 @@ GitHub: https://github.com/SharifWaqas
 
 LinkedIn: https://www.linkedin.com/in/muhammad-sharif-77494139b
 
-Resume:
-- The site must show a real preview/copy of the resume.
-- The actual PDF has not yet been added to this repository.
-- Do not fabricate resume content.
-- Add the real file as `public/resume.pdf` when available.
+Contact email: shaarif.1031@gmail.com
 
-Contact email:
-- A direct contact action is required.
-- The site should contain a phrase such as `Connect with me`.
-- Clicking it should open a Gmail compose draft addressed to the user's real contact email.
-- The canonical contact email has not been supplied in this repo context.
-- Do not infer or fabricate an email address.
-- Once supplied, use Gmail compose as the primary action and a `mailto:` fallback.
+Contact behavior:
+- prominent phrase: `Connect with me`
+- primary action opens Gmail compose addressed to the contact email
+- prefilled subject: `Portfolio / Software Engineering`
+- fallback: `mailto:`
+
+Resume:
+- the uploaded resume is the content source of truth
+- the website should provide a faithful resume view at `/resume`
+- preserve a future slot for `public/resume.pdf` when the binary file is added to the repository
+- do not fabricate or alter resume claims
 
 LeetCode:
 - Username is not yet stored in the repository.
@@ -81,7 +107,6 @@ LeetCode:
 ## Dynamic metrics
 
 The website should fetch rather than hardcode:
-
 - GitHub commit contributions for a clearly labeled time window
 - GitHub total contributions for the same window
 - LeetCode total solved
