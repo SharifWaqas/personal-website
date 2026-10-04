@@ -326,16 +326,16 @@ function PendulumField() {
         (introElapsed - 850) / 1900,
       );
       const trailReveal = easeOutCubic(
-        (introElapsed - 1500) / 2800,
+        (introElapsed - 1900) / 3000,
       );
       const colorReveal = easeOutCubic(
-        (introElapsed - 2200) / 3000,
+        (introElapsed - 3600) / 3200,
       );
       const atmosphereReveal = easeOutCubic(
         (introElapsed - 650) / 2600,
       );
       const fieldReveal = easeOutCubic(
-        (introElapsed - 3300) / 2500,
+        (introElapsed - 4550) / 2600,
       );
 
       const fixed = 1 / 100;
@@ -467,7 +467,7 @@ function PendulumField() {
       ctx.fill();
 
       const fieldStructureReveal = easeOutCubic(
-        (introElapsed - 3900) / 2300,
+        (introElapsed - 5200) / 2200,
       );
       const scrollSeedFade =
         1 - easeOutCubic(Math.max(0, storyProgress - 0.035) / 0.1);
@@ -696,7 +696,7 @@ export function PortfolioExperience({ profile, stats }: Props) {
       setIntroReady(true);
     };
 
-    const timer = window.setTimeout(finishIntro, 5600);
+    const timer = window.setTimeout(finishIntro, 6600);
     const skip = () => finishIntro();
     const keySkip = (event: KeyboardEvent) => {
       if (
@@ -779,8 +779,8 @@ export function PortfolioExperience({ profile, stats }: Props) {
 
           <div className="intro-copy" aria-hidden={introReady}>
             <span>DETERMINISTIC DIVERGENCE</span>
-            <strong>Two systems. Δθ = 0.1°.</strong>
-            <em>Watch what happens.</em>
+            <strong>Δθ = 0.1°</strong>
+            <em>two nearly identical initial states</em>
           </div>
 
           <div className="pendulum-story__hud">
