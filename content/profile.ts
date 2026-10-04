@@ -7,12 +7,18 @@ export type Profile = {
   skills: string[];
   currentlyLearning: string[];
   githubUsername: string;
+  email: string;
   links: {
-    resume: string | null;
+    resume: string;
     github: string;
     linkedin: string;
+    gmailCompose: string;
+    mailto: string;
   };
 };
+
+const email = "shaarif.1031@gmail.com";
+const subject = encodeURIComponent("Portfolio / Software Engineering");
 
 export const profile: Profile = {
   name: "Muhammad Sharif",
@@ -26,31 +32,53 @@ export const profile: Profile = {
     "Performance",
     "AI Applications",
     "Creative Technology",
+    "Mathematical Systems",
   ],
   skills: [
     "Python",
-    "C++",
+    "TypeScript",
     "SQL",
+    "C++",
     "FastAPI",
-    "PostgreSQL",
-    "SQLAlchemy",
-    "REST APIs",
+    "SQLAlchemy 2.0 (Async)",
+    "Alembic",
+    "Pydantic",
     "JWT",
+    "REST APIs",
+    "AsyncIO",
+    "Structured Logging / Observability",
+    "Next.js",
+    "React",
+    "Tailwind CSS",
+    "PostgreSQL",
     "Docker",
-    "Git",
-    "GitHub",
+    "Docker Compose",
+    "Cloudflare R2",
+    "Vercel",
+    "Render",
     "OpenAI API",
+    "NVIDIA NIM",
+    "pytest",
+    "AsyncMock",
+    "Postman",
+    "Git",
+    "Linux",
   ],
   currentlyLearning: [
     "Go",
     "Distributed Systems",
     "System Design",
     "Backend Scalability",
+    "AI Infrastructure",
+    "Performance Optimization",
   ],
   githubUsername: "SharifWaqas",
+  email,
   links: {
-    resume: null,
+    resume: "/resume",
     github: "https://github.com/SharifWaqas",
     linkedin: "https://www.linkedin.com/in/muhammad-sharif-77494139b",
+    gmailCompose: `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}`,
+    mailto: `mailto:${email}?subject=${subject}`,
   },
 };
