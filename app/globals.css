@@ -1430,3 +1430,145 @@ a {
     width: 76px;
   }
 }
+
+
+/* Visibility-first Daffy override: full body must remain readable on near-black backgrounds. */
+.cursor-daffy {
+  width: 132px;
+  height: 182px;
+  z-index: 9999;
+}
+
+.cursor-daffy__halo {
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  width: 92px;
+  height: 138px;
+  border-radius: 46%;
+  background:
+    radial-gradient(
+      circle at 50% 46%,
+      rgba(255, 180, 65, 0.18),
+      rgba(255, 180, 65, 0.06) 54%,
+      transparent 74%
+    );
+  filter: blur(12px);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.cursor-daffy__full {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 122px;
+  height: auto;
+  transform-origin: 50% 76%;
+  transform:
+    scaleX(var(--daffy-facing))
+    rotate(var(--daffy-tilt));
+  filter:
+    drop-shadow(0 0 1px rgba(255, 255, 255, 0.98))
+    drop-shadow(0 0 4px rgba(255, 255, 255, 0.38))
+    drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 12px rgba(255, 166, 46, 0.24));
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  will-change: transform;
+}
+
+.cursor-daffy[data-moving="true"] .cursor-daffy__full {
+  animation: daffy-full-run 300ms ease-in-out infinite alternate;
+}
+
+.cursor-daffy[data-moving="false"] .cursor-daffy__full {
+  animation: daffy-full-idle 2.5s ease-in-out infinite;
+}
+
+.cursor-daffy[data-goofy="true"] .cursor-daffy__full {
+  animation: daffy-full-goofy 190ms ease-in-out infinite alternate;
+}
+
+.cursor-daffy__speech {
+  left: 94px;
+  top: 8px;
+}
+
+@keyframes daffy-full-run {
+  from {
+    transform:
+      scaleX(var(--daffy-facing))
+      rotate(calc(var(--daffy-tilt) - 3deg))
+      translateY(0)
+      scaleY(0.98);
+  }
+  to {
+    transform:
+      scaleX(var(--daffy-facing))
+      rotate(calc(var(--daffy-tilt) + 3deg))
+      translateY(-5px)
+      scaleY(1.02);
+  }
+}
+
+@keyframes daffy-full-idle {
+  0%,
+  100% {
+    transform:
+      scaleX(var(--daffy-facing))
+      rotate(calc(var(--daffy-tilt) - 2deg))
+      translateY(0);
+  }
+  35% {
+    transform:
+      scaleX(var(--daffy-facing))
+      rotate(calc(var(--daffy-tilt) + 3deg))
+      translateY(-3px);
+  }
+  70% {
+    transform:
+      scaleX(var(--daffy-facing))
+      rotate(calc(var(--daffy-tilt) - 4deg))
+      translateY(1px);
+  }
+}
+
+@keyframes daffy-full-goofy {
+  from {
+    transform:
+      scaleX(var(--daffy-facing))
+      rotate(calc(var(--daffy-tilt) - 12deg))
+      translateY(4px)
+      scale(1.03, 0.94);
+  }
+  to {
+    transform:
+      scaleX(var(--daffy-facing))
+      rotate(calc(var(--daffy-tilt) + 12deg))
+      translateY(-10px)
+      scale(0.97, 1.06);
+  }
+}
+
+@media (max-width: 1100px) and (pointer: fine) {
+  .cursor-daffy {
+    width: 112px;
+    height: 160px;
+  }
+
+  .cursor-daffy__full {
+    width: 104px;
+  }
+
+  .cursor-daffy__halo {
+    left: 14px;
+    width: 80px;
+    height: 118px;
+  }
+
+  .cursor-daffy__speech {
+    left: 80px;
+  }
+}
