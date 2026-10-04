@@ -344,7 +344,7 @@ a {
 .metric-grid {
   margin-top: 54px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   border-top: 1px solid var(--line);
   border-left: 1px solid var(--line);
 }
@@ -421,7 +421,7 @@ a {
 .project__stats {
   margin: 34px clamp(36px, 8vw, 110px) 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   border: 1px solid var(--line);
 }
 
@@ -486,6 +486,15 @@ a {
 .project__link {
   margin: 0 clamp(36px, 8vw, 110px) 72px;
   justify-self: start;
+}
+
+.project__source {
+  margin: 0 clamp(36px, 8vw, 110px) 24px;
+  color: var(--faint);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .throughput {
@@ -761,5 +770,161 @@ a {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+
+/* Cursor companion: lightweight CSS Daffy interpretation, no image asset. */
+.cursor-daffy {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  width: 54px;
+  height: 60px;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+  transition: opacity 120ms ease;
+}
+
+.cursor-daffy[data-visible="true"] {
+  opacity: 1;
+}
+
+.cursor-daffy__character {
+  position: relative;
+  width: 44px;
+  height: 48px;
+  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.55));
+}
+
+.cursor-daffy__head {
+  position: absolute;
+  left: 8px;
+  top: 7px;
+  width: 29px;
+  height: 31px;
+  border: 1px solid rgba(245, 243, 236, 0.82);
+  border-radius: 52% 48% 46% 54%;
+  background: #050607;
+  transform: rotate(-7deg);
+}
+
+.cursor-daffy__tuft,
+.cursor-daffy__tuft::before,
+.cursor-daffy__tuft::after {
+  position: absolute;
+  width: 13px;
+  height: 2px;
+  background: #08090a;
+  border-top: 1px solid rgba(245, 243, 236, 0.75);
+  transform-origin: left center;
+}
+
+.cursor-daffy__tuft {
+  left: 22px;
+  top: 8px;
+  transform: rotate(-70deg);
+}
+
+.cursor-daffy__tuft::before,
+.cursor-daffy__tuft::after {
+  content: "";
+  left: 0;
+  top: 0;
+}
+
+.cursor-daffy__tuft::before {
+  transform: rotate(28deg);
+}
+
+.cursor-daffy__tuft::after {
+  transform: rotate(-28deg);
+}
+
+.cursor-daffy__eye {
+  position: absolute;
+  top: 7px;
+  width: 7px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f7f5ed;
+}
+
+.cursor-daffy__eye::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 4px;
+  left: 3px;
+  top: 3px;
+  border-radius: 50%;
+  background: #121416;
+}
+
+.cursor-daffy__eye--left {
+  left: 7px;
+}
+
+.cursor-daffy__eye--right {
+  right: 6px;
+}
+
+.cursor-daffy__beak {
+  position: absolute;
+  left: -3px;
+  top: 18px;
+  width: 34px;
+  height: 11px;
+  border: 1px solid rgba(255, 183, 75, 0.85);
+  border-radius: 60% 48% 58% 45%;
+  background: #d87613;
+  transform: rotate(4deg);
+}
+
+.cursor-daffy__beak::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 5px;
+  top: 5px;
+  height: 1px;
+  background: rgba(55, 27, 2, 0.72);
+}
+
+.cursor-daffy__neck {
+  position: absolute;
+  left: 16px;
+  top: 34px;
+  width: 19px;
+  height: 11px;
+  border: 1px solid rgba(245, 243, 236, 0.8);
+  border-top: 3px solid #f5f3ec;
+  border-radius: 30% 30% 50% 50%;
+  background: #050607;
+}
+
+.cursor-daffy__label {
+  position: absolute;
+  left: 8px;
+  top: 48px;
+  color: rgba(240, 238, 232, 0.58);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 7px;
+  letter-spacing: 0.16em;
+}
+
+.hero--chaos-field .hero__identity {
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.7);
+}
+
+.hero--chaos-field .hero__chrome {
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.85);
+}
+
+@media (pointer: coarse), (max-width: 900px) {
+  .cursor-daffy {
+    display: none;
   }
 }
