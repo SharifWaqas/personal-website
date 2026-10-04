@@ -464,40 +464,19 @@ function CursorDaffy() {
     };
   }, []);
 
-  const daffySrc = "/daffy-cursor-full.png";
-
   return (
     <div
       ref={followerRef}
       className="cursor-daffy"
       aria-hidden="true"
     >
-      <div className="cursor-daffy__rig">
-        <img
-          className="cursor-daffy__piece cursor-daffy__piece--head"
-          src={daffySrc}
-          alt=""
-          draggable={false}
-        />
-        <img
-          className="cursor-daffy__piece cursor-daffy__piece--body"
-          src={daffySrc}
-          alt=""
-          draggable={false}
-        />
-        <img
-          className="cursor-daffy__piece cursor-daffy__piece--leg-left"
-          src={daffySrc}
-          alt=""
-          draggable={false}
-        />
-        <img
-          className="cursor-daffy__piece cursor-daffy__piece--leg-right"
-          src={daffySrc}
-          alt=""
-          draggable={false}
-        />
-      </div>
+      <div className="cursor-daffy__halo" />
+      <img
+        className="cursor-daffy__full"
+        src="/daffy-cursor-full.png"
+        alt=""
+        draggable={false}
+      />
       <span className="cursor-daffy__speech">
         woo!
       </span>
