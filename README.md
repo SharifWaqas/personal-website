@@ -24,7 +24,7 @@ The current branch establishes Stage 0 and the first Stage 1 prototype.
 - Motion
 - GSAP
 - GitHub Actions
-- Vercel-ready architecture
+- Vercel preview deployments
 
 ## Local development
 
@@ -42,6 +42,10 @@ npm run typecheck
 npm run lint
 npm run build
 ```
+
+## Deployment workflow
+
+Feature branches are intended to produce Vercel preview deployments. Production remains tied to the reviewed `main` branch.
 
 ## Dynamic portfolio metrics
 
