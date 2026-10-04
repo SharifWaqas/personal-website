@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { capabilityGroups } from "@/content/capabilities";
 import type { Profile } from "@/content/profile";
 import { resume } from "@/content/resume";
 import { signalSnapshot } from "@/content/signals";
@@ -331,22 +332,39 @@ function CursorDaffy() {
     if (!finePointer.matches) return;
 
     let raf = 0;
-    let x = -100;
-    let y = -100;
-    let targetX = -100;
-    let targetY = -100;
+    let x = -180;
+    let y = -180;
+    let targetX = -180;
+    let targetY = -180;
+    let lastPointerX = -180;
+    let lastPointerY = -180;
+    let velocityX = 0;
+    let velocityY = 0;
+    let lastMoveAt = performance.now();
+    let goofyUntil = 0;
     let visible = false;
 
     const move = (event: PointerEvent) => {
-      targetX = event.clientX + 20;
-      targetY = event.clientY + 18;
+      velocityX += event.clientX - lastPointerX;
+      velocityY += event.clientY - lastPointerY;
+
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+      targetX = event.clientX;
+      targetY = event.clientY;
+      lastMoveAt = performance.now();
 
       if (!visible) {
         visible = true;
-        x = targetX;
-        y = targetY;
+        x = targetX + 28;
+        y = targetY + 24;
         follower.dataset.visible = "true";
       }
+    };
+
+    const click = () => {
+      goofyUntil = performance.now() + 720;
+      follower.dataset.goofy = "true";
     };
 
     const leave = () => {
@@ -354,20 +372,74 @@ function CursorDaffy() {
       visible = false;
     };
 
-    const tick = () => {
-      x += (targetX - x) * 0.22;
-      y += (targetY - y) * 0.22;
-      follower.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    const tick = (now: number) => {
+      const putOnLeft = targetX > window.innerWidth - 150;
+      const side = putOnLeft ? -1 : 1;
+      const offsetX = side * 28;
+      const offsetY = 22;
+
+      x += (targetX + offsetX - x) * 0.16;
+      y += (targetY + offsetY - y) * 0.16;
+
+      const speed = Math.min(
+        1,
+        Math.hypot(velocityX, velocityY) / 34,
+      );
+      const idle = now - lastMoveAt > 520;
+      const goofy = now < goofyUntil;
+
+      const bob = idle
+        ? Math.sin(now / 260) * 6
+        : Math.sin(now / 95) * speed * 3;
+
+      const lean =
+        Math.max(-18, Math.min(18, velocityX * 0.2)) +
+        (idle ? Math.sin(now / 420) * 4 : 0) +
+        (goofy ? Math.sin(now / 45) * 15 : 0);
+
+      const squashY = goofy
+        ? 0.86 + Math.abs(Math.sin(now / 72)) * 0.14
+        : 1;
+
+      const squashX = goofy
+        ? 1.08 + Math.abs(Math.cos(now / 72)) * 0.08
+        : 1;
+
+      follower.style.transform =
+        `translate3d(${x}px, ${y + bob}px, 0)`;
+      follower.style.setProperty(
+        "--daffy-rotate",
+        `${lean}deg`,
+      );
+      follower.style.setProperty(
+        "--daffy-facing",
+        putOnLeft ? "-1" : "1",
+      );
+      follower.style.setProperty(
+        "--daffy-scale-x",
+        `${squashX}`,
+      );
+      follower.style.setProperty(
+        "--daffy-scale-y",
+        `${squashY}`,
+      );
+
+      follower.dataset.goofy = goofy ? "true" : "false";
+
+      velocityX *= 0.82;
+      velocityY *= 0.82;
       raf = requestAnimationFrame(tick);
     };
 
     window.addEventListener("pointermove", move, { passive: true });
+    window.addEventListener("pointerdown", click, { passive: true });
     document.documentElement.addEventListener("mouseleave", leave);
     raf = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerdown", click);
       document.documentElement.removeEventListener("mouseleave", leave);
     };
   }, []);
@@ -378,16 +450,13 @@ function CursorDaffy() {
       className="cursor-daffy"
       aria-hidden="true"
     >
-      <div className="cursor-daffy__character">
-        <span className="cursor-daffy__tuft" />
-        <span className="cursor-daffy__head">
-          <i className="cursor-daffy__eye cursor-daffy__eye--left" />
-          <i className="cursor-daffy__eye cursor-daffy__eye--right" />
-          <i className="cursor-daffy__beak" />
-        </span>
-        <span className="cursor-daffy__neck" />
-      </div>
-      <span className="cursor-daffy__label">DAFFY</span>
+      <img
+        className="cursor-daffy__image"
+        src="/daffy-cursor.png"
+        alt=""
+        draggable={false}
+      />
+      <span className="cursor-daffy__bubble">quack mode</span>
     </div>
   );
 }
@@ -408,11 +477,6 @@ function Flow({ items }: { items: string[] }) {
 }
 
 export function PortfolioExperience({ profile, stats }: Props) {
-  const skillGroups = useMemo(
-    () => Object.entries(resume.skills),
-    [],
-  );
-
   return (
     <main className="portfolio">
       <CursorDaffy />
@@ -463,29 +527,52 @@ export function PortfolioExperience({ profile, stats }: Props) {
           <span>CAPABILITY TOPOLOGY</span>
         </div>
 
-        <div className="section__content">
-          <p className="eyebrow">Languages / frameworks / systems</p>
-          <h2>What I work with.</h2>
+        <div className="section__content capability-content">
+          <p className="eyebrow">Languages / frameworks / systems / evidence</p>
+          <h2>Capability topology.</h2>
+          <p className="body-copy">
+            Every node maps to something I have actually built, measured,
+            deployed, tested, or am explicitly learning. Hover a node to inspect
+            the evidence behind it.
+          </p>
 
-          <div className="skill-matrix">
-            {skillGroups.map(([group, items]) => (
-              <div className="skill-row" key={group}>
-                <div className="skill-row__group">{group}</div>
-                <div className="skill-row__items">
-                  {items.map((item) => (
-                    <span key={item}>{item}</span>
+          <div className="capability-topology">
+            {capabilityGroups.map((group, groupIndex) => (
+              <section className="capability-band" key={group.id}>
+                <header className="capability-band__header">
+                  <span className="capability-band__index">
+                    {String(groupIndex + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <h3>{group.label}</h3>
+                    <p>{group.description}</p>
+                  </div>
+                </header>
+
+                <div className="capability-grid">
+                  {group.capabilities.map((capability) => (
+                    <article
+                      className={`capability-node capability-node--${capability.tier.toLowerCase()}`}
+                      key={capability.name}
+                      tabIndex={0}
+                    >
+                      <div className="capability-node__head">
+                        <strong>{capability.name}</strong>
+                        <span>{capability.tier}</span>
+                      </div>
+                      <p className="capability-node__evidence">
+                        {capability.evidence}
+                      </p>
+                      <div className="capability-node__projects">
+                        {capability.projects.map((project) => (
+                          <span key={project}>{project}</span>
+                        ))}
+                      </div>
+                    </article>
                   ))}
                 </div>
-              </div>
+              </section>
             ))}
-            <div className="skill-row skill-row--learning">
-              <div className="skill-row__group">Currently exploring</div>
-              <div className="skill-row__items">
-                {profile.currentlyLearning.map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </section>
