@@ -170,7 +170,11 @@ function PendulumField() {
     let frameCount = 0;
     let storyProgress = 0;
     let targetStoryProgress = 0;
-    const introStartedAt = performance.now();
+    let introStartedAt = performance.now();
+
+    const accelerateIntro = () => {
+      introStartedAt = performance.now() - 6200;
+    };
 
     const lowPower = window.innerWidth < 700;
     const stateCount = lowPower
@@ -582,6 +586,7 @@ function PendulumField() {
     updateStoryProgress();
     window.addEventListener("resize", resize);
     window.addEventListener("scroll", updateStoryProgress, { passive: true });
+    window.addEventListener("portfolio-intro-skip", accelerateIntro);
     window.addEventListener("pointermove", perturb, { passive: true });
     document.addEventListener("visibilitychange", onVisibility);
     raf = requestAnimationFrame(frame);
@@ -590,6 +595,7 @@ function PendulumField() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       window.removeEventListener("scroll", updateStoryProgress);
+      window.removeEventListener("portfolio-intro-skip", accelerateIntro);
       window.removeEventListener("pointermove", perturb);
       document.removeEventListener("visibilitychange", onVisibility);
     };
@@ -686,6 +692,7 @@ export function PortfolioExperience({ profile, stats }: Props) {
       finished = true;
       html.style.overflow = previousHtmlOverflow;
       body.style.overflow = previousBodyOverflow;
+      window.dispatchEvent(new Event("portfolio-intro-skip"));
       setIntroReady(true);
     };
 
