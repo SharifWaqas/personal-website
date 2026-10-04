@@ -336,113 +336,135 @@ function CursorDaffy() {
     let y = -180;
     let targetX = -180;
     let targetY = -180;
-    let lastPointerX = -180;
-    let lastPointerY = -180;
+    let previousPointerX = -180;
+    let previousPointerY = -180;
     let velocityX = 0;
     let velocityY = 0;
-    let lastMoveAt = performance.now();
+    let lastMoveAt = 0;
     let goofyUntil = 0;
     let visible = false;
 
     const move = (event: PointerEvent) => {
-      velocityX += event.clientX - lastPointerX;
-      velocityY += event.clientY - lastPointerY;
+      if (previousPointerX > -100) {
+        velocityX =
+          velocityX * 0.5 +
+          (event.clientX - previousPointerX) * 0.5;
+        velocityY =
+          velocityY * 0.5 +
+          (event.clientY - previousPointerY) * 0.5;
+      }
 
-      lastPointerX = event.clientX;
-      lastPointerY = event.clientY;
+      previousPointerX = event.clientX;
+      previousPointerY = event.clientY;
       targetX = event.clientX;
       targetY = event.clientY;
       lastMoveAt = performance.now();
 
       if (!visible) {
         visible = true;
-        x = targetX + 28;
-        y = targetY + 24;
+        x = targetX + 34;
+        y = targetY + 22;
         follower.dataset.visible = "true";
       }
     };
 
     const click = () => {
-      goofyUntil = performance.now() + 720;
+      goofyUntil = performance.now() + 820;
       follower.dataset.goofy = "true";
     };
 
     const leave = () => {
       follower.dataset.visible = "false";
+      follower.dataset.moving = "false";
       visible = false;
     };
 
     const tick = (now: number) => {
-      const putOnLeft = targetX > window.innerWidth - 150;
-      const side = putOnLeft ? -1 : 1;
-      const offsetX = side * 28;
-      const offsetY = 22;
+      const placeLeft =
+        targetX > window.innerWidth - 150;
+      const side = placeLeft ? -1 : 1;
 
-      x += (targetX + offsetX - x) * 0.16;
-      y += (targetY + offsetY - y) * 0.16;
-
-      const speed = Math.min(
-        1,
-        Math.hypot(velocityX, velocityY) / 34,
+      const distance = Math.hypot(
+        targetX + side * 36 - x,
+        targetY + 24 - y,
       );
-      const idle = now - lastMoveAt > 520;
+
+      const spring =
+        distance > 100 ? 0.22 : 0.15;
+
+      x += (targetX + side * 36 - x) * spring;
+      y += (targetY + 24 - y) * spring;
+
+      const speed = Math.hypot(velocityX, velocityY);
+      const moving =
+        now - lastMoveAt < 150 && speed > 0.55;
       const goofy = now < goofyUntil;
 
-      const bob = idle
-        ? Math.sin(now / 260) * 6
-        : Math.sin(now / 95) * speed * 3;
-
-      const lean =
-        Math.max(-18, Math.min(18, velocityX * 0.2)) +
-        (idle ? Math.sin(now / 420) * 4 : 0) +
-        (goofy ? Math.sin(now / 45) * 15 : 0);
-
-      const squashY = goofy
-        ? 0.86 + Math.abs(Math.sin(now / 72)) * 0.14
-        : 1;
-
-      const squashX = goofy
-        ? 1.08 + Math.abs(Math.cos(now / 72)) * 0.08
-        : 1;
+      const tilt = Math.max(
+        -13,
+        Math.min(13, velocityX * 0.18),
+      );
 
       follower.style.transform =
-        `translate3d(${x}px, ${y + bob}px, 0)`;
-      follower.style.setProperty(
-        "--daffy-rotate",
-        `${lean}deg`,
-      );
+        `translate3d(${x}px, ${y}px, 0)`;
       follower.style.setProperty(
         "--daffy-facing",
-        putOnLeft ? "-1" : "1",
+        placeLeft ? "-1" : "1",
       );
       follower.style.setProperty(
-        "--daffy-scale-x",
-        `${squashX}`,
+        "--daffy-tilt",
+        `${tilt}deg`,
       );
       follower.style.setProperty(
-        "--daffy-scale-y",
-        `${squashY}`,
+        "--daffy-speed",
+        `${Math.min(1, speed / 24)}`,
       );
 
-      follower.dataset.goofy = goofy ? "true" : "false";
+      follower.dataset.moving =
+        moving ? "true" : "false";
+      follower.dataset.goofy =
+        goofy ? "true" : "false";
 
-      velocityX *= 0.82;
-      velocityY *= 0.82;
+      velocityX *= 0.84;
+      velocityY *= 0.84;
+
       raf = requestAnimationFrame(tick);
     };
 
-    window.addEventListener("pointermove", move, { passive: true });
-    window.addEventListener("pointerdown", click, { passive: true });
-    document.documentElement.addEventListener("mouseleave", leave);
+    window.addEventListener(
+      "pointermove",
+      move,
+      { passive: true },
+    );
+    window.addEventListener(
+      "pointerdown",
+      click,
+      { passive: true },
+    );
+    document.documentElement.addEventListener(
+      "mouseleave",
+      leave,
+    );
     raf = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerdown", click);
-      document.documentElement.removeEventListener("mouseleave", leave);
+      window.removeEventListener(
+        "pointermove",
+        move,
+      );
+      window.removeEventListener(
+        "pointerdown",
+        click,
+      );
+      document.documentElement.removeEventListener(
+        "mouseleave",
+        leave,
+      );
     };
   }, []);
+
+  const daffySrc = "/daffy-cursor-full.png";
 
   return (
     <div
@@ -450,13 +472,35 @@ function CursorDaffy() {
       className="cursor-daffy"
       aria-hidden="true"
     >
-      <img
-        className="cursor-daffy__image"
-        src="/daffy-cursor.png"
-        alt=""
-        draggable={false}
-      />
-      <span className="cursor-daffy__bubble">quack mode</span>
+      <div className="cursor-daffy__rig">
+        <img
+          className="cursor-daffy__piece cursor-daffy__piece--head"
+          src={daffySrc}
+          alt=""
+          draggable={false}
+        />
+        <img
+          className="cursor-daffy__piece cursor-daffy__piece--body"
+          src={daffySrc}
+          alt=""
+          draggable={false}
+        />
+        <img
+          className="cursor-daffy__piece cursor-daffy__piece--leg-left"
+          src={daffySrc}
+          alt=""
+          draggable={false}
+        />
+        <img
+          className="cursor-daffy__piece cursor-daffy__piece--leg-right"
+          src={daffySrc}
+          alt=""
+          draggable={false}
+        />
+      </div>
+      <span className="cursor-daffy__speech">
+        woo!
+      </span>
     </div>
   );
 }
