@@ -30,21 +30,41 @@ const M2 = 1;
 const L1 = 1;
 const L2 = 1;
 const G = 9.81;
-const PENDULUM_COUNT = 200;
+const DESKTOP_PENDULUM_COUNT = 200;
+const MOBILE_PENDULUM_COUNT = 80;
 const ANGLE_DELTA = (0.1 * Math.PI) / 180;
 const CHAPTER_COUNT = 7;
-const SEED_A = Math.floor(PENDULUM_COUNT / 2) - 1;
-const SEED_B = Math.floor(PENDULUM_COUNT / 2);
 
 const CAMERA_PRESETS: CameraPreset[] = [
   { scale: 1.0, focusX: 0.5, focusY: 0.48 },
-  { scale: 1.42, focusX: 0.5, focusY: 0.42 },
-  { scale: 1.75, focusX: 0.37, focusY: 0.58 },
-  { scale: 2.15, focusX: 0.63, focusY: 0.56 },
-  { scale: 2.65, focusX: 0.31, focusY: 0.62 },
-  { scale: 2.65, focusX: 0.69, focusY: 0.62 },
-  { scale: 1.18, focusX: 0.5, focusY: 0.5 },
+  { scale: 1.4, focusX: 0.5, focusY: 0.43 },
+  { scale: 1.72, focusX: 0.37, focusY: 0.57 },
+  { scale: 2.08, focusX: 0.63, focusY: 0.55 },
+  { scale: 2.52, focusX: 0.31, focusY: 0.61 },
+  { scale: 2.52, focusX: 0.69, focusY: 0.61 },
+  { scale: 1.02, focusX: 0.5, focusY: 0.49 },
 ];
+
+const CHAPTERS = [
+  ["00", "INITIAL"],
+  ["01", "CAPABILITIES"],
+  ["02", "RECORD"],
+  ["03", "SIGNALS"],
+  ["04", "SAFESTEP"],
+  ["05", "INGESTION"],
+  ["06", "CONTACT"],
+] as const;
+
+const PRIMARY_SKILLS = new Set([
+  "Python",
+  "FastAPI",
+  "PostgreSQL",
+  "SQLAlchemy 2.0",
+  "Docker",
+  "TypeScript",
+  "Observability",
+  "Performance Profiling",
+]);
 
 function metric(value: number | null) {
   return value === null ? "—" : value.toLocaleString("en-US");
@@ -152,25 +172,32 @@ function PendulumField() {
     let targetStoryProgress = 0;
     const introStartedAt = performance.now();
 
+    const lowPower = window.innerWidth < 700;
+    const stateCount = lowPower
+      ? MOBILE_PENDULUM_COUNT
+      : DESKTOP_PENDULUM_COUNT;
+    const seedA = Math.floor(stateCount / 2) - 1;
+    const seedB = Math.floor(stateCount / 2);
+
     const states = Array.from(
-      { length: PENDULUM_COUNT },
+      { length: stateCount },
       (_, index): PendulumState => ({
         a1:
           Math.PI * 0.72 +
-          (index - (PENDULUM_COUNT - 1) / 2) * ANGLE_DELTA,
+          (index - (stateCount - 1) / 2) * ANGLE_DELTA,
         a2: Math.PI * 0.46,
         w1: 0,
         w2: 0,
       }),
     );
 
-    const previousEnds = new Float32Array(PENDULUM_COUNT * 2);
+    const previousEnds = new Float32Array(stateCount * 2);
     previousEnds.fill(Number.NaN);
 
     const resize = () => {
       width = window.innerWidth;
       height = window.innerHeight;
-      dpr = Math.min(window.devicePixelRatio || 1, 1.2);
+      dpr = Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 1.2);
 
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
@@ -192,6 +219,7 @@ function PendulumField() {
     };
 
     const perturb = (event: PointerEvent) => {
+      if (lowPower) return;
       const px = event.clientX / Math.max(1, width) - 0.5;
       const py = event.clientY / Math.max(1, height) - 0.5;
       const kick = (px * 0.7 + py * 0.3) * 0.000025;
@@ -218,13 +246,60 @@ function PendulumField() {
       const current = CAMERA_PRESETS[index];
       const next = CAMERA_PRESETS[index + 1];
 
-      const scale = lerp(current.scale, next.scale, local);
+      const maxScale = lowPower ? 1.55 : 10;
+      const scale = Math.min(
+        maxScale,
+        lerp(current.scale, next.scale, local),
+      );
       const focusX = lerp(current.focusX, next.focusX, local) * width;
       const focusY = lerp(current.focusY, next.focusY, local) * height;
 
       ctx.translate(width * 0.5, height * 0.5);
       ctx.scale(scale, scale);
       ctx.translate(-focusX, -focusY);
+    };
+
+    const drawSystemProof = (
+      labels: string[],
+      centerX: number,
+      centerY: number,
+      strength: number,
+    ) => {
+      if (strength <= 0.01 || lowPower) return;
+
+      const gap = 92;
+      const startX = centerX - ((labels.length - 1) * gap) / 2;
+
+      ctx.save();
+      ctx.globalAlpha = strength;
+
+      for (let index = 0; index < labels.length; index += 1) {
+        const x = startX + index * gap;
+
+        if (index < labels.length - 1) {
+          ctx.strokeStyle = "rgba(240,238,232,0.22)";
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(x + 14, centerY);
+          ctx.lineTo(x + gap - 14, centerY);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = "rgba(1,2,3,0.72)";
+        ctx.strokeStyle = "rgba(240,238,232,0.34)";
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.arc(x, centerY, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(240,238,232,0.72)";
+        ctx.font = "8px ui-monospace, SFMono-Regular, Consolas, monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(labels[index], x, centerY + 28);
+      }
+
+      ctx.restore();
     };
 
     const frame = (now: number) => {
@@ -255,12 +330,15 @@ function PendulumField() {
       const atmosphereReveal = easeOutCubic(
         (introElapsed - 650) / 2600,
       );
+      const fieldReveal = easeOutCubic(
+        (introElapsed - 3300) / 2500,
+      );
 
       const fixed = 1 / 100;
       let steps = 0;
       const stepMultiplier = 0.12 + motionReveal * 0.88;
 
-      while (accumulator >= fixed && steps < 3) {
+      while (accumulator >= fixed && steps < (lowPower ? 2 : 3)) {
         for (const state of states) {
           stepPendulum(state, fixed * stepMultiplier);
         }
@@ -268,23 +346,19 @@ function PendulumField() {
         steps += 1;
       }
 
-      const arm = Math.min(width, height) * 0.16;
+      const arm = Math.min(width, height) * (lowPower ? 0.18 : 0.16);
       const originX = width * 0.5;
-      const originY = height * 0.43;
+      const originY = height * (lowPower ? 0.37 : 0.43);
 
-      if (frameCount % 2 === 0) {
+      if (frameCount % (lowPower ? 3 : 2) === 0) {
         trailCtx.save();
         trailCtx.globalCompositeOperation = "destination-out";
         trailCtx.fillStyle =
-          `rgba(0,0,0,${0.058 - trailReveal * 0.032})`;
+          `rgba(0,0,0,${0.06 - trailReveal * 0.03})`;
         trailCtx.fillRect(0, 0, width, height);
         trailCtx.restore();
 
         trailCtx.globalCompositeOperation = "source-over";
-
-        const fieldReveal = easeOutCubic(
-          (introElapsed - 3300) / 2500,
-        );
 
         for (let index = 0; index < states.length; index += 1) {
           const p = endPoint(
@@ -295,10 +369,10 @@ function PendulumField() {
           );
           const px = previousEnds[index * 2];
           const py = previousEnds[index * 2 + 1];
-          const isSeed = index === SEED_A || index === SEED_B;
+          const isSeed = index === seedA || index === seedB;
 
           if (Number.isFinite(px) && Number.isFinite(py)) {
-            const hue = (index / PENDULUM_COUNT) * 330 + 10;
+            const hue = (index / stateCount) * 330 + 10;
             const saturation = isSeed
               ? 8 + colorReveal * 72
               : 14 + colorReveal * 82;
@@ -349,14 +423,18 @@ function PendulumField() {
         `rgba(255, 255, 255, ${0.014 * atmosphereReveal})`,
       );
       atmosphere.addColorStop(1, "rgba(0,0,0,0)");
-
       ctx.fillStyle = atmosphere;
       ctx.fillRect(0, 0, width, height);
+
+      const ending = easeInOutCubic(
+        (storyProgress - 0.86) / 0.14,
+      );
 
       ctx.save();
       applyCamera();
 
-      ctx.globalAlpha = 0.12 + trailReveal * 0.88;
+      ctx.globalAlpha =
+        (0.12 + trailReveal * 0.88) * (1 - ending * 0.46);
       ctx.drawImage(
         trailCanvas,
         0,
@@ -387,8 +465,9 @@ function PendulumField() {
       const fieldStructureReveal = easeOutCubic(
         (introElapsed - 3900) / 2300,
       );
-      const seedPhysicalFade =
+      const scrollSeedFade =
         1 - easeOutCubic(Math.max(0, storyProgress - 0.035) / 0.1);
+      const seedPhysicalFade = Math.max(scrollSeedFade, ending * 0.9);
 
       const drawPhysicalPendulum = (
         index: number,
@@ -401,7 +480,7 @@ function PendulumField() {
           originY,
           arm,
         );
-        const hue = (index / PENDULUM_COUNT) * 330 + 10;
+        const hue = (index / stateCount) * 330 + 10;
         const armSaturation = 4 + colorReveal * 70;
         const armLightness = 86 - colorReveal * 18;
         const armAlpha =
@@ -426,18 +505,10 @@ function PendulumField() {
         ctx.fill();
       };
 
-      drawPhysicalPendulum(
-        SEED_A,
-        seedPhysicalFade,
-        1,
-      );
-      drawPhysicalPendulum(
-        SEED_B,
-        seedPhysicalFade * 0.78,
-        0.94,
-      );
+      drawPhysicalPendulum(seedA, seedPhysicalFade, 1);
+      drawPhysicalPendulum(seedB, seedPhysicalFade * 0.78, 0.94);
 
-      if (fieldStructureReveal > 0.02) {
+      if (fieldStructureReveal > 0.02 && !lowPower) {
         const drawStride =
           fieldStructureReveal < 0.45 ? 12 : 8;
 
@@ -446,7 +517,7 @@ function PendulumField() {
           index < states.length;
           index += drawStride
         ) {
-          if (index === SEED_A || index === SEED_B) continue;
+          if (index === seedA || index === seedB) continue;
 
           const p = endPoint(
             states[index],
@@ -454,7 +525,7 @@ function PendulumField() {
             originY,
             arm,
           );
-          const hue = (index / PENDULUM_COUNT) * 330 + 10;
+          const hue = (index / stateCount) * 330 + 10;
 
           ctx.beginPath();
           ctx.moveTo(originX, originY);
@@ -465,6 +536,40 @@ function PendulumField() {
           ctx.lineWidth = 0.42;
           ctx.stroke();
         }
+      }
+
+      const chapterFloat = storyProgress * (CHAPTER_COUNT - 1);
+      const safeStepStrength =
+        clamp01(1 - Math.abs(chapterFloat - 4) / 0.58);
+      const ingestionStrength =
+        clamp01(1 - Math.abs(chapterFloat - 5) / 0.58);
+
+      drawSystemProof(
+        ["UPLOAD", "AUTH", "ANALYSIS", "VISION", "RISK", "TELEM"],
+        width * 0.5,
+        height * 0.48,
+        safeStepStrength,
+      );
+      drawSystemProof(
+        ["HTTP", "QUEUE", "W1-4", "BATCH", "PG"],
+        width * 0.5,
+        height * 0.48,
+        ingestionStrength,
+      );
+
+      if (ending > 0.05 && !lowPower) {
+        ctx.save();
+        ctx.globalAlpha = ending * 0.42;
+        ctx.strokeStyle = "rgba(240,238,232,0.26)";
+        ctx.lineWidth = 0.6;
+        for (let index = 0; index < states.length; index += 10) {
+          const p = endPoint(states[index], originX, originY, arm);
+          ctx.beginPath();
+          ctx.moveTo(p.x2, p.y2);
+          ctx.lineTo(originX, originY);
+          ctx.stroke();
+        }
+        ctx.restore();
       }
 
       ctx.restore();
@@ -523,7 +628,11 @@ function ChapterShell({
   children: React.ReactNode;
 }) {
   return (
-    <section className={`story-chapter story-chapter--${side}`}>
+    <section
+      className={`story-chapter story-chapter--${side}`}
+      id={`chapter-${index}`}
+      data-chapter={index}
+    >
       <div className="story-panel">
         <div className="story-panel__meta">
           <span>{index}</span>
@@ -538,6 +647,18 @@ function ChapterShell({
 
 export function PortfolioExperience({ profile, stats }: Props) {
   const [introReady, setIntroReady] = useState(false);
+  const [activeChapter, setActiveChapter] = useState(0);
+
+  const primaryCapabilities = capabilityGroups
+    .flatMap((group) => group.capabilities)
+    .filter((capability) => PRIMARY_SKILLS.has(capability.name));
+
+  const secondaryCapabilityGroups = capabilityGroups.map((group) => ({
+    ...group,
+    capabilities: group.capabilities.filter(
+      (capability) => !PRIMARY_SKILLS.has(capability.name),
+    ),
+  }));
 
   useEffect(() => {
     const reduced = window.matchMedia(
@@ -555,22 +676,90 @@ export function PortfolioExperience({ profile, stats }: Props) {
     const body = document.body;
     const previousHtmlOverflow = html.style.overflow;
     const previousBodyOverflow = body.style.overflow;
+    let finished = false;
 
     html.style.overflow = "hidden";
     body.style.overflow = "hidden";
 
-    const timer = window.setTimeout(() => {
+    const finishIntro = () => {
+      if (finished) return;
+      finished = true;
       html.style.overflow = previousHtmlOverflow;
       body.style.overflow = previousBodyOverflow;
       setIntroReady(true);
-    }, 5900);
+    };
+
+    const timer = window.setTimeout(finishIntro, 5600);
+    const skip = () => finishIntro();
+    const keySkip = (event: KeyboardEvent) => {
+      if (
+        event.key === "ArrowDown" ||
+        event.key === "PageDown" ||
+        event.key === " " ||
+        event.key === "Enter"
+      ) {
+        finishIntro();
+      }
+    };
+
+    window.addEventListener("wheel", skip, { passive: true, once: true });
+    window.addEventListener("pointerdown", skip, { passive: true, once: true });
+    window.addEventListener("touchstart", skip, { passive: true, once: true });
+    window.addEventListener("keydown", keySkip);
 
     return () => {
       window.clearTimeout(timer);
+      window.removeEventListener("wheel", skip);
+      window.removeEventListener("pointerdown", skip);
+      window.removeEventListener("touchstart", skip);
+      window.removeEventListener("keydown", keySkip);
       html.style.overflow = previousHtmlOverflow;
       body.style.overflow = previousBodyOverflow;
     };
   }, []);
+
+  useEffect(() => {
+    if (!introReady) return;
+
+    const story = document.getElementById("pendulum-story");
+    if (!story) return;
+
+    const update = () => {
+      const rect = story.getBoundingClientRect();
+      const scrollable = Math.max(1, story.offsetHeight - window.innerHeight);
+      const progress = clamp01(-rect.top / scrollable);
+      setActiveChapter(
+        Math.min(
+          CHAPTER_COUNT - 1,
+          Math.max(0, Math.round(progress * (CHAPTER_COUNT - 1))),
+        ),
+      );
+    };
+
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [introReady]);
+
+  const goToChapter = (index: number) => {
+    if (!introReady) {
+      setIntroReady(true);
+    }
+
+    document
+      .getElementById(`chapter-${String(index).padStart(2, "0")}`)
+      ?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+  };
 
   return (
     <main className="portfolio">
@@ -581,6 +770,12 @@ export function PortfolioExperience({ profile, stats }: Props) {
         <div className="pendulum-story__sticky">
           <PendulumField />
 
+          <div className="intro-copy" aria-hidden={introReady}>
+            <span>DETERMINISTIC DIVERGENCE</span>
+            <strong>Two systems. Δθ = 0.1°.</strong>
+            <em>Watch what happens.</em>
+          </div>
+
           <div className="pendulum-story__hud">
             <span>
               {introReady
@@ -590,11 +785,39 @@ export function PortfolioExperience({ profile, stats }: Props) {
             <span>Δθ = 0.1°</span>
           </div>
 
-          {introReady ? (
-            <div className="pendulum-story__scroll-hint">
-              scroll to enter the system
+          {!introReady ? (
+            <div className="intro-skip">
+              scroll / click to skip
             </div>
-          ) : null}
+          ) : (
+            <>
+              <nav
+                className="chapter-nav"
+                aria-label="Portfolio chapters"
+              >
+                {CHAPTERS.map(([number, label], index) => (
+                  <button
+                    type="button"
+                    key={number}
+                    className={
+                      activeChapter === index ? "is-active" : undefined
+                    }
+                    onClick={() => goToChapter(index)}
+                    aria-current={
+                      activeChapter === index ? "step" : undefined
+                    }
+                  >
+                    <span>{number}</span>
+                    <b>{label}</b>
+                  </button>
+                ))}
+              </nav>
+
+              <div className="pendulum-story__scroll-hint">
+                scroll to enter the system
+              </div>
+            </>
+          )}
         </div>
 
         <div className="pendulum-story__chapters">
@@ -609,45 +832,46 @@ export function PortfolioExperience({ profile, stats }: Props) {
             </p>
             <p>
               Backend systems, distributed thinking, mathematical structure.
-              Two nearly identical states become a field of radically different outcomes.
+              Two nearly identical states become radically different outcomes.
             </p>
           </ChapterShell>
 
           <ChapterShell
             index="01"
             eyebrow="CAPABILITY TOPOLOGY"
-            title="The stack, mapped to evidence."
+            title="Core systems first."
             side="right"
           >
-            <div className="story-capabilities">
-              {capabilityGroups.map((group) => (
-                <div className="story-capability-group" key={group.id}>
-                  <strong>{group.label}</strong>
-                  <div>
-                    {group.capabilities.map((capability) => (
-                      <span
-                        key={capability.name}
-                        className={
-                          capability.tier === "EXPLORING"
-                            ? "is-exploring"
-                            : undefined
-                        }
-                        title={capability.evidence}
-                      >
-                        {capability.name}
-                        <small>{capability.tier}</small>
-                      </span>
-                    ))}
-                  </div>
+            <div className="story-core-skills">
+              {primaryCapabilities.map((capability) => (
+                <div key={capability.name}>
+                  <strong>{capability.name}</strong>
+                  <span>{capability.tier}</span>
+                  <p>{capability.evidence}</p>
                 </div>
               ))}
+            </div>
+
+            <div className="story-secondary-skills">
+              {secondaryCapabilityGroups.map((group) =>
+                group.capabilities.length ? (
+                  <div key={group.id}>
+                    <strong>{group.label}</strong>
+                    <p>
+                      {group.capabilities
+                        .map((capability) => capability.name)
+                        .join(" · ")}
+                    </p>
+                  </div>
+                ) : null,
+              )}
             </div>
           </ChapterShell>
 
           <ChapterShell
             index="02"
             eyebrow="ENGINEERING RECORD"
-            title="Resume / source of truth."
+            title="Production work, not a badge wall."
             side="left"
           >
             <p>{resume.summary}</p>
@@ -665,9 +889,9 @@ export function PortfolioExperience({ profile, stats }: Props) {
               <span>Python</span>
               <span>FastAPI</span>
               <span>PostgreSQL</span>
-              <span>Next.js</span>
+              <span>SQLAlchemy</span>
               <span>Docker</span>
-              <span>OpenAI / NIM</span>
+              <span>Next.js</span>
             </div>
           </ChapterShell>
 
@@ -714,15 +938,15 @@ export function PortfolioExperience({ profile, stats }: Props) {
           <ChapterShell
             index="04"
             eyebrow="PROJECT / SAFESTEP"
-            title="AI safety, treated like a real system."
+            title="A request moving through a real system."
             side="left"
           >
             <p>
-              SafeStep helps older adults understand suspicious screenshots,
-              messages, emails, and websites through a production multimodal
-              analysis pipeline.
+              The trajectory resolves into SafeStep's production request path:
+              authenticated upload, multimodal analysis, deterministic risk
+              scoring, and non-blocking telemetry.
             </p>
-            <div className="story-flow">
+            <div className="story-flow story-flow--proof">
               <span>Upload</span>
               <b>→</b>
               <span>Auth</span>
@@ -758,15 +982,16 @@ export function PortfolioExperience({ profile, stats }: Props) {
             side="right"
           >
             <p>
-              Queue buffering, four background workers, batched PostgreSQL
-              writes, retries, cursor pagination, and observability analytics.
+              One trajectory becomes a producer-consumer pipeline: queue
+              buffering, four workers, batched PostgreSQL writes, retries,
+              pagination, and observability analytics.
             </p>
             <div className="story-throughput">
               <span className="story-throughput__before">46</span>
               <span className="story-throughput__line" />
               <span className="story-throughput__after">921+</span>
             </div>
-            <div className="story-flow">
+            <div className="story-flow story-flow--proof">
               <span>HTTP</span>
               <b>→</b>
               <span>Queue</span>
@@ -789,10 +1014,14 @@ export function PortfolioExperience({ profile, stats }: Props) {
 
           <ChapterShell
             index="06"
-            eyebrow="OPEN CHANNEL"
+            eyebrow="RETURN TO SOURCE"
             title="Open channel."
             side="center"
           >
+            <p className="story-closing-line">
+              Many trajectories. Two initial states. One place to continue the
+              conversation.
+            </p>
             <a
               className="story-contact"
               href={profile.links.gmailCompose}
@@ -802,7 +1031,7 @@ export function PortfolioExperience({ profile, stats }: Props) {
               Connect with me ↗
             </a>
             <div className="story-actions story-actions--center">
-              <a href={profile.links.mailto}>Mail fallback</a>
+              <a href={profile.links.mailto}>Mail</a>
               <a
                 href={profile.links.linkedin}
                 target="_blank"
