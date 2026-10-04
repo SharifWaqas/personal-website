@@ -64,6 +64,31 @@ export const metadata: Metadata = {
   },
 };
 
+const personJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Muhammad Sharif",
+  url: siteUrl,
+  sameAs: [
+    "https://github.com/SharifWaqas",
+    "https://www.linkedin.com/in/muhammad-sharif-77494139b",
+  ],
+  alumniOf: {
+    "@type": "CollegeOrUniversity",
+    name: "University of Southern Mississippi",
+  },
+  knowsAbout: [
+    "Backend Engineering",
+    "Distributed Systems",
+    "Python",
+    "FastAPI",
+    "PostgreSQL",
+    "Docker",
+    "Computer Science",
+    "Mathematics",
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -71,7 +96,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(personJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
