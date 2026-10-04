@@ -31,6 +31,15 @@ function metric(value: number | null) {
   return value === null ? "—" : value.toLocaleString("en-US");
 }
 
+function clamp01(value: number) {
+  return Math.min(1, Math.max(0, value));
+}
+
+function easeOutCubic(value: number) {
+  const t = clamp01(value);
+  return 1 - Math.pow(1 - t, 3);
+}
+
 function stepPendulum(state: PendulumState, dt: number) {
   const { a1, a2, w1, w2 } = state;
   const c = Math.cos(a1 - a2);
@@ -109,6 +118,7 @@ function PendulumField() {
     let hidden = false;
     let inView = true;
     let frameCount = 0;
+    const introStartedAt = performance.now();
 
     const states = Array.from(
       { length: PENDULUM_COUNT },
@@ -182,25 +192,43 @@ function PendulumField() {
       last = now;
       accumulator += delta / 1000;
 
+      const introElapsed = now - introStartedAt;
+      const structureReveal = easeOutCubic(
+        (introElapsed - 250) / 1750,
+      );
+      const motionReveal = easeOutCubic(
+        (introElapsed - 850) / 1900,
+      );
+      const trailReveal = easeOutCubic(
+        (introElapsed - 1500) / 2800,
+      );
+      const colorReveal = easeOutCubic(
+        (introElapsed - 2200) / 3000,
+      );
+      const atmosphereReveal = easeOutCubic(
+        (introElapsed - 650) / 2600,
+      );
+
       const fixed = 1 / 100;
       let steps = 0;
+      const stepMultiplier = 0.12 + motionReveal * 0.88;
 
       while (accumulator >= fixed && steps < 3) {
         for (const state of states) {
-          stepPendulum(state, fixed);
+          stepPendulum(state, fixed * stepMultiplier);
         }
         accumulator -= fixed;
         steps += 1;
       }
 
-      const arm = Math.min(width, height) * 0.17;
+      const arm = Math.min(width, height) * 0.16;
       const originX = width * 0.5;
-      const originY = Math.max(110, height * 0.19);
+      const originY = height * 0.43;
 
       if (frameCount % 2 === 0) {
         trailCtx.save();
         trailCtx.globalCompositeOperation = "destination-out";
-        trailCtx.fillStyle = "rgba(0,0,0,0.022)";
+        trailCtx.fillStyle = `rgba(0,0,0,${0.058 - trailReveal * 0.032})`;
         trailCtx.fillRect(0, 0, width, height);
         trailCtx.restore();
 
@@ -222,8 +250,13 @@ function PendulumField() {
             trailCtx.beginPath();
             trailCtx.moveTo(px, py);
             trailCtx.lineTo(p.x2, p.y2);
-            trailCtx.strokeStyle = `hsla(${hue}, 96%, 64%, 0.52)`;
-            trailCtx.lineWidth = 0.72;
+            const saturation = 14 + colorReveal * 82;
+            const lightness = 78 - colorReveal * 14;
+            const alpha = 0.012 + trailReveal * 0.46;
+
+            trailCtx.strokeStyle =
+              `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
+            trailCtx.lineWidth = 0.38 + trailReveal * 0.42;
             trailCtx.stroke();
           }
 
@@ -232,8 +265,36 @@ function PendulumField() {
         }
       }
 
-      ctx.fillStyle = "#050607";
+      ctx.fillStyle = "#010203";
       ctx.fillRect(0, 0, width, height);
+
+      const atmosphere = ctx.createRadialGradient(
+        originX,
+        originY,
+        16,
+        originX,
+        height * 0.52,
+        Math.max(width, height) * 0.62,
+      );
+      atmosphere.addColorStop(
+        0,
+        `rgba(255, 178, 72, ${0.045 * atmosphereReveal})`,
+      );
+      atmosphere.addColorStop(
+        0.28,
+        `rgba(92, 74, 255, ${0.028 * atmosphereReveal})`,
+      );
+      atmosphere.addColorStop(
+        0.58,
+        `rgba(255, 255, 255, ${0.014 * atmosphereReveal})`,
+      );
+      atmosphere.addColorStop(1, "rgba(0,0,0,0)");
+
+      ctx.fillStyle = atmosphere;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.globalAlpha = 0.12 + trailReveal * 0.88;
       ctx.drawImage(
         trailCanvas,
         0,
@@ -245,20 +306,26 @@ function PendulumField() {
         width,
         height,
       );
+      ctx.restore();
 
-      ctx.strokeStyle = "rgba(242, 240, 234, 0.16)";
+      ctx.strokeStyle =
+        `rgba(242, 240, 234, ${0.015 + structureReveal * 0.15})`;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(originX - 126, originY);
       ctx.lineTo(originX + 126, originY);
       ctx.stroke();
 
-      ctx.fillStyle = "rgba(242, 240, 234, 0.7)";
+      ctx.fillStyle =
+        `rgba(242, 240, 234, ${0.03 + structureReveal * 0.58})`;
       ctx.beginPath();
       ctx.arc(originX, originY, 3, 0, Math.PI * 2);
       ctx.fill();
 
-      for (let index = 0; index < states.length; index += 2) {
+      const drawStride =
+        trailReveal < 0.32 ? 8 : trailReveal < 0.68 ? 4 : 2;
+
+      for (let index = 0; index < states.length; index += drawStride) {
         const p = endPoint(
           states[index],
           originX,
@@ -271,12 +338,18 @@ function PendulumField() {
         ctx.moveTo(originX, originY);
         ctx.lineTo(p.x1, p.y1);
         ctx.lineTo(p.x2, p.y2);
-        ctx.strokeStyle = `hsla(${hue}, 92%, 66%, 0.14)`;
-        ctx.lineWidth = 0.75;
+        const armSaturation = 8 + colorReveal * 84;
+        const armLightness = 82 - colorReveal * 16;
+        const armAlpha = 0.008 + structureReveal * 0.15;
+
+        ctx.strokeStyle =
+          `hsla(${hue}, ${armSaturation}%, ${armLightness}%, ${armAlpha})`;
+        ctx.lineWidth = 0.48 + structureReveal * 0.32;
         ctx.stroke();
 
         if (index % 16 === 0) {
-          ctx.fillStyle = `hsla(${hue}, 96%, 67%, 0.72)`;
+          ctx.fillStyle =
+            `hsla(${hue}, ${18 + colorReveal * 78}%, 68%, ${0.03 + structureReveal * 0.62})`;
           ctx.beginPath();
           ctx.arc(p.x2, p.y2, 1.8, 0, Math.PI * 2);
           ctx.fill();
@@ -343,11 +416,11 @@ export function PortfolioExperience({ profile, stats }: Props) {
       <section className="hero hero--chaos-field" id="top">
         <PendulumField />
 
-        <div className="hero__chrome hero__chrome--left">
+        <div className="hero__chrome hero__chrome--left hero__ui--delayed">
           CHAOS THEORY / 200 DOUBLE PENDULUMS / Δθ = 0.1°
         </div>
 
-        <div className="hero__chrome hero__chrome--right">
+        <div className="hero__chrome hero__chrome--right hero__ui--delayed">
           <span>
             {signalSnapshot.github.authoredPublicRepoCommits} authored commits
           </span>
@@ -359,7 +432,7 @@ export function PortfolioExperience({ profile, stats }: Props) {
           </span>
         </div>
 
-        <div className="hero__identity">
+        <div className="hero__identity hero__identity--delayed">
           <p className="kicker">
             {profile.year} · Computer Science + Mathematics
           </p>
@@ -369,13 +442,13 @@ export function PortfolioExperience({ profile, stats }: Props) {
           </p>
         </div>
 
-        <div className="hero__legend">
+        <div className="hero__legend hero__ui--late">
           <span>200 systems</span>
           <span>0.1° between initial conditions</span>
           <span>deterministic divergence</span>
         </div>
 
-        <a className="scroll-cue" href="#capabilities">
+        <a className="scroll-cue hero__ui--late" href="#capabilities">
           scroll to inspect ↓
         </a>
       </section>
