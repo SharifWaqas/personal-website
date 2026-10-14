@@ -6,6 +6,8 @@ Name: Muhammad Sharif
 
 Current year: Sophomore
 
+Public-facing specialization: AI Systems Engineer (focus and direction, not a claim of prior full-time employment)
+
 School: University of Southern Mississippi
 
 Academic focus:
@@ -13,6 +15,10 @@ Academic focus:
 - Mathematics
 
 Primary interests:
+- AI systems engineering
+- AI infrastructure
+- model orchestration and validated AI outputs
+- observability and reliability
 - backend engineering
 - distributed systems
 - software engineering
@@ -91,7 +97,7 @@ Contact email: shaarif.1031@gmail.com
 Contact behavior:
 - prominent phrase: `Connect with me`
 - primary action opens Gmail compose addressed to the contact email
-- prefilled subject: `Portfolio / Software Engineering`
+- prefilled subject: `Portfolio / AI Systems Engineering`
 - fallback: `mailto:`
 
 Resume:
