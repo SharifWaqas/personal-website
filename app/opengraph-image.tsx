@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "Muhammad Sharif — Software Engineer, Computer Science + Mathematics";
+  "Muhammad Sharif — AI Systems Engineer, Computer Science + Mathematics";
 export const size = {
   width: 1200,
   height: 630,
@@ -168,7 +168,7 @@ export default function Image() {
                 color: "rgba(242,240,234,0.72)",
               }}
             >
-              Software Engineering · Computer Science + Mathematics
+              AI Systems Engineer · Computer Science + Mathematics
             </div>
           </div>
 
@@ -180,9 +180,9 @@ export default function Image() {
               color: "rgba(242,240,234,0.46)",
             }}
           >
-            <span>BACKEND SYSTEMS</span>
-            <span>DISTRIBUTED INFRASTRUCTURE</span>
-            <span>AI APPLICATIONS</span>
+            <span>MODEL ORCHESTRATION</span>
+            <span>BACKEND RELIABILITY</span>
+            <span>OBSERVABILITY</span>
           </div>
         </div>
       </div>
