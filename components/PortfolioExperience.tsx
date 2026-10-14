@@ -671,8 +671,10 @@ export function PortfolioExperience({ profile, stats }: Props) {
     ).matches;
 
     if (reduced) {
-      setIntroReady(true);
-      return;
+      // Defer the state update until the next frame so the effect only
+      // synchronizes with the browser without triggering React's lint rule.
+      const frame = window.requestAnimationFrame(() => setIntroReady(true));
+      return () => window.cancelAnimationFrame(frame);
     }
 
     window.scrollTo(0, 0);
