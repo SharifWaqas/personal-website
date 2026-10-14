@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { capabilityGroups } from "@/content/capabilities";
 import type { Profile } from "@/content/profile";
-import { resume } from "@/content/resume";
 import { signalSnapshot } from "@/content/signals";
 import type { PortfolioStats } from "@/lib/stats";
 
@@ -60,8 +59,8 @@ const PRIMARY_SKILLS = new Set([
   "FastAPI",
   "PostgreSQL",
   "SQLAlchemy 2.0",
-  "Docker",
-  "TypeScript",
+  "OpenAI API",
+  "AI Fallback Logic",
   "Observability",
   "Performance Profiling",
 ]);
@@ -834,19 +833,20 @@ export function PortfolioExperience({ profile, stats }: Props) {
             title={profile.name}
             side="left"
           >
+            <p className="story-panel__role">{profile.role}</p>
             <p className="story-panel__lead">
               {profile.year} · Computer Science + Mathematics
             </p>
             <p>
-              Backend systems, distributed thinking, mathematical structure.
-              Two nearly identical states become radically different outcomes.
+              I build intelligent systems and the reliable infrastructure behind them.
+              The simulation is the starting point: small changes, measured consequences.
             </p>
           </ChapterShell>
 
           <ChapterShell
             index="01"
             eyebrow="CAPABILITY TOPOLOGY"
-            title="Core systems first."
+            title="Intelligence needs infrastructure."
             side="right"
           >
             <div className="story-core-skills">
@@ -878,10 +878,10 @@ export function PortfolioExperience({ profile, stats }: Props) {
           <ChapterShell
             index="02"
             eyebrow="ENGINEERING RECORD"
-            title="Production work, not a badge wall."
+            title="From model calls to reliable systems."
             side="left"
           >
-            <p>{resume.summary}</p>
+            <p>{profile.focusStatement}</p>
             <div className="story-actions">
               <a href={profile.links.resume}>View full resume →</a>
               <a
@@ -925,7 +925,7 @@ export function PortfolioExperience({ profile, stats }: Props) {
               </div>
               <div>
                 <strong>921+</strong>
-                <span>ingestion events/sec</span>
+                <span>local benchmark peak · events/sec</span>
               </div>
               <div>
                 <strong>124</strong>
@@ -949,18 +949,18 @@ export function PortfolioExperience({ profile, stats }: Props) {
             side="left"
           >
             <p>
-              The trajectory resolves into SafeStep's production request path:
-              authenticated upload, multimodal analysis, deterministic risk
-              scoring, and non-blocking telemetry.
+              The trajectory resolves into SafeStep: authenticated uploads,
+              multimodal provider orchestration with fallback, validated model
+              outputs, deterministic risk scoring, and non-blocking telemetry.
             </p>
             <div className="story-flow story-flow--proof">
-              <span>Upload</span>
-              <b>→</b>
               <span>Auth</span>
               <b>→</b>
-              <span>Analysis</span>
+              <span>Upload</span>
               <b>→</b>
               <span>Vision</span>
+              <b>→</b>
+              <span>Validate</span>
               <b>→</b>
               <span>Risk</span>
               <b>→</b>
