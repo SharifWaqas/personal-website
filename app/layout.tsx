@@ -6,18 +6,20 @@ const siteUrl = "https://sharifwaqas.vercel.app";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Muhammad Sharif — Software Engineer | CS + Mathematics",
+    default: "Muhammad Sharif — AI Systems Engineer | CS + Mathematics",
     template: "%s | Muhammad Sharif",
   },
   description:
-    "Muhammad Sharif is a Computer Science and Mathematics student building backend systems, distributed infrastructure, and production AI applications.",
+    "Muhammad Sharif is a Computer Science and Mathematics student focused on AI systems engineering: multimodal model orchestration, reliable backend infrastructure, observability, and distributed systems.",
   applicationName: "Muhammad Sharif Portfolio",
   authors: [{ name: "Muhammad Sharif", url: siteUrl }],
   creator: "Muhammad Sharif",
   publisher: "Muhammad Sharif",
   keywords: [
     "Muhammad Sharif",
-    "software engineer",
+    "AI systems engineer",
+    "AI infrastructure",
+    "model orchestration",
     "backend engineer",
     "computer science",
     "mathematics",
@@ -32,23 +34,23 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteUrl,
     siteName: "Muhammad Sharif",
-    title: "Muhammad Sharif — Software Engineer | CS + Mathematics",
+    title: "Muhammad Sharif — AI Systems Engineer | CS + Mathematics",
     description:
-      "Backend systems, distributed infrastructure, production AI applications, and mathematical systems.",
+      "Model orchestration, validated AI outputs, backend reliability, observability, and mathematical systems.",
     images: [
       {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Muhammad Sharif — Software Engineer portfolio",
+        alt: "Muhammad Sharif — AI Systems Engineer portfolio",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Muhammad Sharif — Software Engineer | CS + Mathematics",
+    title: "Muhammad Sharif — AI Systems Engineer | CS + Mathematics",
     description:
-      "Backend systems, distributed infrastructure, production AI applications, and mathematical systems.",
+      "Model orchestration, validated AI outputs, backend reliability, observability, and mathematical systems.",
     images: ["/opengraph-image"],
   },
   robots: {
@@ -78,6 +80,9 @@ const personJsonLd = {
     name: "University of Southern Mississippi",
   },
   knowsAbout: [
+    "AI Systems Engineering",
+    "AI Model Orchestration",
+    "Observability",
     "Backend Engineering",
     "Distributed Systems",
     "Python",
