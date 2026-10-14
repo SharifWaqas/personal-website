@@ -78,9 +78,11 @@ The rest of the portfolio should feel like the same mathematical instrument unfo
 
 A viewer should be able to recognize the site from a five-second screen recording with all copy removed.
 
-## Backend / mathematics / engineering identity
+## AI systems / backend / mathematics identity
 
 The design should visually communicate:
+- model orchestration and validation boundaries
+- reliability and failure-aware infrastructure
 - systems thinking
 - data flow
 - state
