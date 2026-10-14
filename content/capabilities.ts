@@ -224,8 +224,8 @@ export const capabilityGroups: CapabilityGroup[] = [
   },
   {
     id: "ai",
-    label: "AI / Applied Models",
-    description: "Model integration as one subsystem inside a larger product.",
+    label: "AI Systems / Model Integration",
+    description: "Provider orchestration, output validation, and failure-aware model integration.",
     capabilities: [
       {
         name: "OpenAI API",
