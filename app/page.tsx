@@ -4,7 +4,7 @@ import { profile } from "@/content/profile";
 import { getPortfolioStats } from "@/lib/stats";
 
 export const metadata: Metadata = {
-  title: "Muhammad Sharif — Software Engineer | CS + Mathematics",
+  title: "Muhammad Sharif — AI Systems Engineer | CS + Mathematics",
   alternates: {
     canonical: "/",
   },
