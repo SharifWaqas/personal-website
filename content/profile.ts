@@ -1,5 +1,7 @@
 export type Profile = {
   name: string;
+  role: string;
+  focusStatement: string;
   year: string;
   school: string;
   academicFocus: string[];
@@ -18,14 +20,21 @@ export type Profile = {
 };
 
 const email = "shaarif.1031@gmail.com";
-const subject = encodeURIComponent("Portfolio / Software Engineering");
+const subject = encodeURIComponent("Portfolio / AI Systems Engineering");
 
 export const profile: Profile = {
   name: "Muhammad Sharif",
+  role: "AI Systems Engineer",
+  focusStatement:
+    "I build intelligent applications and the reliable infrastructure behind them. My work spans multimodal model orchestration, validated outputs, failure-aware backend APIs, request tracing, and measured data pipelines.",
   year: "Sophomore",
   school: "University of Southern Mississippi",
   academicFocus: ["Computer Science", "Mathematics"],
   interests: [
+    "AI Systems Engineering",
+    "AI Infrastructure",
+    "Model Orchestration",
+    "Observability",
     "Backend Engineering",
     "Distributed Systems",
     "System Design",
