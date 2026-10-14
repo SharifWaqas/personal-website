@@ -6,7 +6,7 @@ import styles from "./resume.module.css";
 export const metadata: Metadata = {
   title: "Resume",
   description:
-    "Resume for Muhammad Sharif — Computer Science and Mathematics student focused on backend engineering, distributed systems, and production software.",
+    "Resume for Muhammad Sharif — Computer Science and Mathematics student focused on AI systems, backend engineering, model integration, and observability.",
   alternates: {
     canonical: "/resume",
   },
@@ -19,7 +19,7 @@ export default function ResumePage() {
         <Link href="/" className={styles.back}>← system</Link>
         <a
           className={styles.contact}
-          href="https://mail.google.com/mail/?view=cm&fs=1&to=shaarif.1031%40gmail.com&su=Portfolio%20%2F%20Software%20Engineering"
+          href="https://mail.google.com/mail/?view=cm&fs=1&to=shaarif.1031%40gmail.com&su=Portfolio%20%2F%20AI%20Systems%20Engineering"
           target="_blank"
           rel="noreferrer"
         >
