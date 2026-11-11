@@ -28,8 +28,8 @@ export const capabilityGroups: CapabilityGroup[] = [
         name: "Python",
         tier: "CORE",
         evidence:
-          "Primary backend language across SafeStep and the ingestion engine.",
-        projects: ["SafeStep", "Log Analytics"],
+          "Primary backend language across SafeStep, HexaDepth, and the ingestion engine.",
+        projects: ["SafeStep", "Log Analytics", "HexaDepth"],
       },
       {
         name: "TypeScript",
@@ -70,8 +70,8 @@ export const capabilityGroups: CapabilityGroup[] = [
         name: "FastAPI",
         tier: "CORE",
         evidence:
-          "Production API layer for both SafeStep and Log Analytics.",
-        projects: ["SafeStep", "Log Analytics"],
+          "API layer across SafeStep, Log Analytics, and HexaDepth's sonar transmission demo.",
+        projects: ["SafeStep", "Log Analytics", "HexaDepth"],
       },
       {
         name: "SQLAlchemy 2.0",
@@ -189,8 +189,8 @@ export const capabilityGroups: CapabilityGroup[] = [
         name: "pytest",
         tier: "STRONG",
         evidence:
-          "SafeStep validated with a 124-test suite and parameterized parser tests.",
-        projects: ["SafeStep"],
+          "Validated SafeStep with 124 tests and HexaDepth with 324 passing tests.",
+        projects: ["SafeStep", "HexaDepth"],
       },
       {
         name: "Git / GitHub",
