@@ -60,6 +60,6 @@ Treat skills as system metadata: terse, typographic, and subordinate to the work
 
 ## Projects
 
-Exactly two featured project worlds.
+Three featured project worlds: SafeStep, Log Analytics, and HexaDepth.
 
 They should be spatially and behaviorally distinct while clearly belonging to the same parent chaos system.
