@@ -32,7 +32,7 @@ const G = 9.81;
 const DESKTOP_PENDULUM_COUNT = 200;
 const MOBILE_PENDULUM_COUNT = 80;
 const ANGLE_DELTA = (0.1 * Math.PI) / 180;
-const CHAPTER_COUNT = 7;
+const CHAPTER_COUNT = 8;
 
 const CAMERA_PRESETS: CameraPreset[] = [
   { scale: 1.0, focusX: 0.5, focusY: 0.48 },
@@ -41,6 +41,7 @@ const CAMERA_PRESETS: CameraPreset[] = [
   { scale: 2.08, focusX: 0.63, focusY: 0.55 },
   { scale: 2.52, focusX: 0.31, focusY: 0.61 },
   { scale: 2.52, focusX: 0.69, focusY: 0.61 },
+  { scale: 2.32, focusX: 0.38, focusY: 0.56 },
   { scale: 1.02, focusX: 0.5, focusY: 0.49 },
 ];
 
@@ -51,7 +52,8 @@ const CHAPTERS = [
   ["03", "SIGNALS"],
   ["04", "SAFESTEP"],
   ["05", "INGESTION"],
-  ["06", "CONTACT"],
+  ["06", "HEXADEPTH"],
+  ["07", "CONTACT"],
 ] as const;
 
 const PRIMARY_SKILLS = new Set([
@@ -430,7 +432,7 @@ function PendulumField() {
       ctx.fillRect(0, 0, width, height);
 
       const ending = easeInOutCubic(
-        (storyProgress - 0.86) / 0.14,
+        (storyProgress - 0.88) / 0.12,
       );
 
       ctx.save();
@@ -546,6 +548,8 @@ function PendulumField() {
         clamp01(1 - Math.abs(chapterFloat - 4) / 0.58);
       const ingestionStrength =
         clamp01(1 - Math.abs(chapterFloat - 5) / 0.58);
+      const hexaDepthStrength =
+        clamp01(1 - Math.abs(chapterFloat - 6) / 0.58);
 
       drawSystemProof(
         ["UPLOAD", "AUTH", "ANALYSIS", "VISION", "RISK", "TELEM"],
@@ -558,6 +562,12 @@ function PendulumField() {
         width * 0.5,
         height * 0.48,
         ingestionStrength,
+      );
+      drawSystemProof(
+        ["SONAR", "COORDS", "PREVIEW", "CROPS", "CRC"],
+        width * 0.5,
+        height * 0.48,
+        hexaDepthStrength,
       );
 
       if (ending > 0.05 && !lowPower) {
@@ -1023,6 +1033,53 @@ export function PortfolioExperience({ profile, stats }: Props) {
 
           <ChapterShell
             index="06"
+            eyebrow="PROJECT / HEXADEPTH"
+            title="The important signal arrives first."
+            side="left"
+          >
+            <p className="story-panel__lead">
+              VOXO Hackathon 2026 · Blue Economy Winner
+            </p>
+            <p>
+              HexaDepth is a priority-first sonar transmission prototype built
+              for bandwidth-constrained underwater communication. It sends
+              object-region coordinates first, then a low-resolution scene
+              overview and prioritized detail crops, with optional byte-exact
+              image recovery.
+            </p>
+            <div className="story-flow story-flow--proof">
+              <span>Sonar</span>
+              <b>→</b>
+              <span>Coordinates</span>
+              <b>→</b>
+              <span>Preview</span>
+              <b>→</b>
+              <span>Detail crops</span>
+              <b>→</b>
+              <span>Reassembly</span>
+            </div>
+            <div className="story-project-facts">
+              <span><strong>64 B</strong> packet frames</span>
+              <span><strong>CRC-16</strong> frame integrity</span>
+              <span><strong>SHA-256</strong> exact recovery check</span>
+              <span><strong>324</strong> passing tests</span>
+            </div>
+            <p>
+              Transfer times are software simulations, not measured underwater
+              modem performance.
+            </p>
+            <a
+              className="story-project-link"
+              href="https://github.com/SharifWaqas/hexadepth-backend"
+              target="_blank"
+              rel="noreferrer"
+            >
+              inspect HexaDepth ↗
+            </a>
+          </ChapterShell>
+
+          <ChapterShell
+            index="07"
             eyebrow="RETURN TO SOURCE"
             title="Open channel."
             side="center"

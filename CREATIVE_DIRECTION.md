@@ -27,7 +27,8 @@ and then realize:
 9. Live GitHub activity
 10. SafeStep technical world
 11. Log Analytics + Ingestion Engine technical world
-12. Contact node / Connect with me
+12. HexaDepth priority-first sonar transmission technical world
+13. Contact node / Connect with me
 
 The hero is no longer the entire website. The site must support intentional vertical scrolling while preserving the same mathematical visual language.
 

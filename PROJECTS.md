@@ -1,6 +1,6 @@
 # Featured Projects
 
-The portfolio should feature SafeStep and the Log Analytics / Ingestion Engine system as deep technical case studies.
+The portfolio features SafeStep, the Log Analytics / Ingestion Engine system, and HexaDepth as technical case studies, each expressed in the site's mathematical and systems language.
 
 ## 01 — SafeStep
 
@@ -100,3 +100,31 @@ This should be the strongest systems-engineering world: throughput, architecture
 Do not present either project as a conventional rectangular portfolio card.
 
 Projects should emerge from the site's mathematical/system language through traces, topology, state transitions, observability views, and architecture rather than generic UI reveal animations.
+
+## 03 — HexaDepth
+
+Repository: https://github.com/SharifWaqas/hexadepth-backend
+
+Award: VOXO 2026 hackathon, Blue Economy stream winner (team project).
+
+### Core idea
+
+A priority-first sonar transmission research prototype for constrained underwater links: send object-region coordinates, a low-resolution scene overview, and prioritized detail crops before optionally reconstructing the byte-exact full image.
+
+### Technical story
+
+- Python / FastAPI analysis and transport endpoints
+- 64-byte software packet frames with CRC-16
+- receiver-side reassembly
+- optional lossless recovery with SHA-256 integrity verification
+- simulated acoustic-link transfer-time comparisons
+- optional trained sonar detector, with fallback when weights are unavailable
+- repository reports 324 passing tests and 4 skips
+
+### Accuracy and limitations
+
+Software simulations use selected bit rates and publicly specified modem characteristics. The prototype has not been tested with acoustic hardware underwater. The fallback region selection is not a validated sonar object-recognition model, and real-world transfer speedups are not established.
+
+### Portfolio angle
+
+Use the already-established flow and system-proof visual language. Show a progression from coordinates to scene context to detail to verified reassembly, not a generic project card.

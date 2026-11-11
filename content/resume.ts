@@ -60,6 +60,19 @@ export const resume = {
   },
   projects: [
     {
+      name: "HexaDepth — Priority-First Sonar Transmission (VOXO Blue Economy Winner)",
+      period: "Nov 2026",
+      links: "github.com/SharifWaqas/hexadepth-backend",
+      stack:
+        "Python | FastAPI | Sonar Image Processing | Packet Framing | CRC-16 | SHA-256 | pytest",
+      bullets: [
+        "Won the VOXO hackathon Blue Economy stream as part of the HexaDepth team, developing a prototype to send high-value sonar information before full-resolution imagery over bandwidth-constrained links.",
+        "Built priority-first delivery for object-region coordinates, a low-resolution scene overview, and detailed image crops, with optional byte-exact image recovery.",
+        "Used 64-byte software packet frames, CRC-16 integrity validation, receiver-side reassembly, and SHA-256 verification; the repository reports 324 passing tests.",
+        "Benchmarked simulated acoustic transfer times against full-file delivery; no physical underwater modem testing has been performed.",
+      ],
+    },
+    {
       name: "SafeStep – AI-Powered Digital Safety Companion",
       period: "Jun 2026 – Present",
       links: "usesafestep.com | github.com/SharifWaqas/safestep",
